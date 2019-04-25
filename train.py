@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import argparse
 from sklearn.metrics import r2_score
 
-from model import create_model, create_placeholders
+#from model import create_model, create_placeholders
+
+from model import NeuralNet
 from data import load_data
 from params import create_parser
 
@@ -14,9 +16,24 @@ path = '../npz_small/small-dataset.npz'
 
 x_train, x_test, y_train, y_test = load_data(path, 200)
 
+
+
+filter_sizes = [32, 64, 128, 256]
+kernel_sizes = [[6, 2], [3, 1], [3, 1], [1, 1]]
+pool_sizes = [[2,2],[3,1],[3,1],[1,1]]
+hidden_units = [4096,1024,256,1]
+
+#net = NeuralNet(filter_sizes=filter_sizes, kernel_sizes=kernel_sizes, pool_sizes=pool_sizes, hidden_units=hidden_units)
+net = NeuralNet(filter_sizes, kernel_sizes, pool_sizes, hidden_units)
+
+predictions = net.create_model()
+"""
 x_in, y_in = create_placeholders()
 
 predictions = create_model(x_in=x_in)
+"""
+x_in, y_in = net.get_placeholders()
+
 
 loss = tf.losses.mean_squared_error(
     labels=y_in, predictions=predictions)  # define loss

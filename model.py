@@ -1,40 +1,53 @@
 import tensorflow as tf
 
 
-def create_placeholders():
-    x_in = tf.placeholder(tf.float32, [None, 18, 2])
-    y_in = tf.placeholder(tf.int32, [None])
+class NeuralNet():
+    def __init__(self, filter_sizes, kernel_sizes, pool_sizes, hidden_units, strides=2, activation_fn=tf.nn.relu):
+        self.filter_sizes = filter_sizes
+        self.kernel_sizes = kernel_sizes
+        self.pool_sizes = pool_sizes
+        self.hidden_units = hidden_units
+        self.strides = strides
+        self.padding = "same"
+        self.activation_fn = activation_fn
+        self.x_in = tf.placeholder(tf.float32, [None, 18, 2])  # input data size
+        self.y_in = tf.placeholder(tf.int32, [None])  # output data size
 
-    return x_in, y_in
+    def _get_conv(self, previous_layer, filter_size,  kernel_size, pool_size, last_flag=False):
+        if not last_flag:
+            x = tf.contrib.layers.conv2d(
+                previous_layer, filter_size, kernel_size=kernel_size, padding=self.padding, activation_fn=self.activation_fn)
+            x = tf.layers.max_pooling2d(inputs=x, pool_size=pool_size, strides=self.strides)
+        else:
+            x = tf.contrib.layers.conv2d(
+                previous_layer, filter_size, kernel_size=kernel_size, padding=self.padding, activation_fn=None)
+        return x
 
+    def _get_dense(self, previous_layer, unit, last_flag=False):
+        if not last_flag:
+            x = tf.layers.dense(previous_layer, unit, self.activation_fn)
+        else:
+            x = tf.layers.dense(previous_layer, unit, None)
+        return x
 
-def create_model(x_in):
-    x = tf.reshape(x_in, [-1, 18, 2, 1])
+    def get_placeholders(self):
+        return self.x_in, self.y_in
 
-    x = tf.contrib.layers.conv2d(
-        x, 32, kernel_size=[6, 2], padding="same", activation_fn=tf.nn.relu)
+    def create_model(self):
+        x = tf.reshape(self.x_in, [-1, 18, 2, 1])
+        last_flag = False
+        for i, (f, k, p) in enumerate(zip(self.filter_sizes, self.kernel_sizes, self.pool_sizes)):
+            if i == len(self.filter_sizes) - 1:
+                last_flag = True
+            x = self._get_conv(x, f, k, p, last_flag)
 
-    x = tf.layers.max_pooling2d(inputs=x, pool_size=[2, 2], strides=2)
+        x = tf.reshape(x, [-1, 1 * 1 * self.filter_sizes[-1]])
+        last_flag = False
+        for i, unit in enumerate(self.hidden_units):
+            if i == len(self.hidden_units) - 1:
+                last_flag = True
+            x = self._get_dense(x, unit, last_flag)
 
-    x = tf.contrib.layers.conv2d(
-        x, 64, kernel_size=[3, 1], padding="same", activation_fn=tf.nn.relu)
+        x = tf.reshape(x, [-1])
 
-    x = tf.layers.max_pooling2d(inputs=x, pool_size=[3, 1], strides=2)
-
-    x = tf.contrib.layers.conv2d(
-        x, 128, kernel_size=[3, 1], padding="same", activation_fn=tf.nn.relu)
-
-    x = tf.layers.max_pooling2d(inputs=x, pool_size=[3, 1], strides=2)
-
-    x = tf.contrib.layers.conv2d(
-        x, 256, kernel_size=[1, 1], padding="same", activation_fn=tf.nn.relu)
-
-    x = tf.reshape(x, [-1, 1 * 1 * 256])
-
-    x = tf.layers.dense(x, 4096, tf.nn.relu)
-    x = tf.layers.dense(x, 1024, tf.nn.relu)
-    x = tf.layers.dense(x, 256, tf.nn.relu)
-    x = tf.layers.dense(x, 1, None)
-    x = tf.reshape(x, [-1])
-
-    return x
+        return x

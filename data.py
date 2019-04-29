@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def load_data(path, thresh):
+def load_data(path, thresh=None):
     data = np.load(path, 'r')
 
     train_data = data['TRAIN']
@@ -14,9 +14,11 @@ def load_data(path, thresh):
     y_test = te_data['PT_CODE']
     x_test = te_data['HITS']
 
-    x_train = x_train[:thresh]
-    y_train = y_train[:thresh]
+    if thresh is not None:
+        x_train = x_train[:thresh]
+        y_train = y_train[:thresh]
 
-    x_test = x_test[:thresh]
-    y_test = y_test[:thresh]
+        x_test = x_test[:thresh]
+        y_test = y_test[:thresh]
+
     return x_train, x_test, y_train, y_test

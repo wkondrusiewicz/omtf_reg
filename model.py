@@ -10,8 +10,8 @@ class NeuralNet():
         self.strides = strides
         self.padding = "same"
         self.activation_fn = activation_fn
-        self.x_in = tf.placeholder(tf.float32, [None, 18, 2])  # input data size
-        self.y_in = tf.placeholder(tf.int32, [None])  # output data size
+        self.x_in = tf.placeholder(tf.float32, [None, 18, 2], name='InData')  # input data size
+        self.y_in = tf.placeholder(tf.int32, [None], name='OutData')  # output data size
 
     def _get_conv(self, previous_layer, filter_size,  kernel_size, pool_size, last_flag=False):
         if not last_flag:
@@ -48,6 +48,6 @@ class NeuralNet():
                 last_flag = True
             x = self._get_dense(x, unit, last_flag)
 
-        x = tf.reshape(x, [-1])
+        x = tf.reshape(x, [-1], name="predictions")
 
         return x

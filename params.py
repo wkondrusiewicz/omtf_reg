@@ -1,5 +1,5 @@
 import argparse
-
+import json
 
 def create_parser():
     parser = argparse.ArgumentParser(
@@ -13,5 +13,16 @@ def create_parser():
 
     parser.add_argument('-p', '--plot', help="Plot the result?",
                         type=bool, default=False, required=False)
+    parser.add_argument('-s', '--save_loc', help='Saving location', type=str, required=True)
+    parser.add_argument('-c', '--create_basic_info', help='Create basic info file', required=False, type=bool, default=False)
+
     args = parser.parse_args()
-    return args.epochs, args.batch_size, args.plot
+    if args.create_basic_info:
+        data = dict(zip(["epochs", "batch_size","plottable", "save_loc"],[args.epochs, args.batch_size, args.plot, args.save_loc]))
+        create_json(data=data)
+
+    return args.epochs, args.batch_size, args.plot, args.save_loc
+
+def create_json(data):
+    with open('basic_info.json', 'w') as f:
+        json.dump(data, f)

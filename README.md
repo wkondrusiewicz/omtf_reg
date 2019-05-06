@@ -6,5 +6,4 @@ Attempt to use nn4omtf (https://github.com/jlysiak/fuw-nn4omtf) for regression t
 * Saving models ✓
 * Better plots ✓
 * Checking if nn4omtf features can be easily merged into this model
-
-temp
+* Run tests on whole data

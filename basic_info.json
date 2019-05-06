@@ -1,1 +1,1 @@
-{"epochs": 25, "batch_size": 32, "plottable": true, "save_loc": "model_save/first"}
+{"epochs": 5, "batch_size": 32, "plottable": true, "save_loc": "../model_save/first", "thresh": 1000}

@@ -15,13 +15,14 @@ def create_parser():
                         type=bool, default=False, required=False)
     parser.add_argument('-s', '--save_loc', help='Saving location', type=str, required=True)
     parser.add_argument('-c', '--create_basic_info', help='Create basic info file', required=False, type=bool, default=False)
+    parser.add_argument('-t', '--thresh', help='Data threshold', required=False, type=int, default=None)
 
     args = parser.parse_args()
     if args.create_basic_info:
-        data = dict(zip(["epochs", "batch_size","plottable", "save_loc"],[args.epochs, args.batch_size, args.plot, args.save_loc]))
+        data = dict(zip(["epochs", "batch_size","plottable", "save_loc", "thresh"],[args.epochs, args.batch_size, args.plot, args.save_loc, args.thresh]))
         create_json(data=data)
 
-    return args.epochs, args.batch_size, args.plot, args.save_loc
+    return args.epochs, args.batch_size, args.plot, args.save_loc, args.thresh
 
 def create_json(data):
     with open('basic_info.json', 'w') as f:

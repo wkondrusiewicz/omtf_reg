@@ -64,6 +64,12 @@ with tf.Session() as sess:
         diff[ind] = df.mean()
         diff_std[ind] = df.std()
 
+
+        #print(pred_tr[:10], y_train[:10])
+        plt.hist(df+ind*5,bins=40)
+        plt.show(block=False)
+        #print(df.mean())
+
     dir_loc = save_loc.split('/')
     dir_loc = dir_loc[:-2]
     dir_loc = '/'.join(dir_loc)
@@ -87,11 +93,11 @@ if plottable:
 
     plt.subplot(3, 1, 3)
     plt.plot(epochs, diff)
-    plt.fill_between(epochs, diff + diff_std, diff - diff_std, alpha=0.1)
+    #plt.fill_between(epochs, diff + diff_std, diff - diff_std, alpha=0.1)
 
     plt.title(f'Loss for training for {ep_number} epochs')
     plt.xlabel('Epochs')
-    plt.ylabel('Loss')
+    plt.ylabel('Pull')
 
     plt.tight_layout()
     plt.show()

@@ -24,7 +24,7 @@ with open('basic_info.json', 'r') as f:
 
 path = '../../npz_small/small-dataset.npz'
 
-_, x_test, _, y_test = load_data(path, thresh=thresh)
+_, _, x_test, _, _, y_test = load_data(path, thresh=thresh)
 
 test_batch_size = 512
 
@@ -49,7 +49,7 @@ with tf.Session() as sess:
         f'Test gave averaged: r2_score = {np.mean(r2_scores)} with loss = {np.mean(losses)}')
 
 
-fig = plt.figure(figsize=(12,6))
+fig = plt.figure(figsize=(12, 6))
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twiny()
 
@@ -59,11 +59,11 @@ ax1.set_xlabel('$p_T$ [GeV]')
 ax2.set_xlim(ax1.get_xlim())
 ax2.set_xticks(pt_intervals[::2])
 ax2.tick_params(colors='red')
-ax2.set_xticklabels(range(1, len(pt_intervals) + 1,2))
+ax2.set_xticklabels(range(1, len(pt_intervals) + 1, 2))
 ax2.set_xlabel('Corresponding $p_T$ codes', color='red')
 ax2.spines['top'].set_color('red')
 
 
 ax1.set_ylabel('Effectivness')
-plt.title(f'Effectivness curve',fontsize=16)
+plt.title(f'Effectivness curve', fontsize=16)
 plt.show()

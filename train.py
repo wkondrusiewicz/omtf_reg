@@ -14,7 +14,7 @@ ep_number, batch_size, plottable, save_loc, thresh = create_parser()
 
 path = '../../npz_small/small-dataset.npz'
 
-x_train, x_test, y_train, y_test = load_data(path, thresh=thresh)
+x_train, x_val, _, y_train, y_val, _ = load_data(path, thresh=thresh)
 
 filter_sizes = [32, 64, 128, 256]
 kernel_sizes = [[6, 2], [3, 1], [3, 1], [1, 1]]
@@ -38,10 +38,14 @@ init = tf.global_variables_initializer()  # initializer
 saver = tf.train.Saver()
 
 epochs = range(1, ep_number + 1)
-r2_scores = []
-losses = []
-diff = np.zeros(ep_number)
-diff_std = np.zeros(ep_number)
+r2_scores_tr = []
+r2_scores_val = []
+losses_tr = []
+losses_val = []
+diff_tr = np.zeros(ep_number)
+diff_val = np.zeros(ep_number)
+diff_tr_std = np.zeros(ep_number)
+diff_val_std = np.zeros(ep_number)
 
 with tf.Session() as sess:
     sess.run(init)  # init variables
@@ -54,21 +58,31 @@ with tf.Session() as sess:
             end = batch_size * (i + 1)
             ls_tr, _ = sess.run([loss, train], feed_dict={
                                 y_in: y_train[start:end], x_in: x_train[start:end]})
-
+            ls_val = sess.run(
+                loss, feed_dict={y_in: y_val[start:end], x_in: x_val[start:end]})
         pred_tr = sess.run(predictions, feed_dict={x_in: x_train})
-        r2_train = r2_score(y_train, np.array(pred_tr))
-        print(f'Epoch {epoch} gave r2_score {r2_train} with loss of {ls_tr}')
-        r2_scores.append(r2_train)
-        losses.append(ls_tr)
-        df = (pred_tr - y_train) / y_train
-        diff[ind] = df.mean()
-        diff_std[ind] = df.std()
+        pred_val = sess.run(predictions, feed_dict={x_in: x_val})
 
+        r2_train = r2_score(y_train, np.array(pred_tr))
+        r2_val = r2_score(y_val, np.array(pred_val))
+
+        print(f'Epoch {epoch} gave:\nTRAIN: r2_score {r2_train} with loss of {ls_tr}\nVALID: r2_score {r2_val} with loss of {ls_val}')
+        r2_scores_tr.append(r2_train)
+        r2_scores_val.append(r2_val)
+        losses_tr.append(ls_tr)
+        losses_val.append(ls_val)
+        df_tr = (pred_tr - y_train) / y_train
+        diff_tr[ind] = df_tr.mean()
+        diff_tr_std[ind] = df_tr.std()
+
+        df_val = (pred_val - y_val) / y_val
+        diff_val[ind] = df_val.mean()
+        diff_val_std[ind] = df_val.std()
 
         #print(pred_tr[:10], y_train[:10])
-        plt.hist(df+ind*5,bins=40)
-        plt.show(block=False)
-        #print(df.mean())
+        #plt.hist(df + ind * 5, bins=40)
+        #plt.show(block=False)
+        # print(df.mean())
 
     dir_loc = save_loc.split('/')
     dir_loc = dir_loc[:-2]
@@ -80,19 +94,22 @@ with tf.Session() as sess:
 if plottable:
     plt.figure(figsize=(8, 12))
     plt.subplot(3, 1, 1)
-    plt.plot(epochs, r2_scores)
+    plt.plot(epochs, r2_scores_tr)
+    plt.plot(epochs, r2_scores_val)
     plt.title(f'r2 score for training for {ep_number} epochs')
     plt.xlabel('Epochs')
     plt.ylabel('r2 score')
 
     plt.subplot(3, 1, 2)
-    plt.plot(epochs, losses)
+    plt.plot(epochs, losses_tr)
+    plt.plot(epochs, losses_val)
     plt.title(f'Loss for training for {ep_number} epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
     plt.subplot(3, 1, 3)
-    plt.plot(epochs, diff)
+    plt.plot(epochs, diff_tr)
+    plt.plot(epochs, diff_val)
     #plt.fill_between(epochs, diff + diff_std, diff - diff_std, alpha=0.1)
 
     plt.title(f'Loss for training for {ep_number} epochs')

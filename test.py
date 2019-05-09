@@ -40,7 +40,7 @@ with tf.Session() as sess:
         start = test_batch_size * i
         end = test_batch_size * (i + 1)
         pr, l = sess.run(['predictions:0', 'loss:0'], feed_dict={
-                         "InData:0": x_test[start:end], 'OutData:0': y_test[start:end]})
+                         "InData:0": x_test[start:end], 'OutData:0': y_test[start:end],  'is_training:0': False})
         r2 = r2_score(y_test[start:end], np.array(pr))
         losses.append(l)
         r2_scores.append(r2)

@@ -25,7 +25,7 @@ net = NeuralNet(filter_sizes, kernel_sizes, pool_sizes, hidden_units)
 
 predictions = net.create_model()
 
-x_in, y_in = net.get_placeholders()
+x_in, y_in, is_training = net.get_placeholders()
 
 
 loss = tf.losses.mean_squared_error(
@@ -56,12 +56,19 @@ with tf.Session() as sess:
         for i in range(n):
             start = batch_size * i
             end = batch_size * (i + 1)
-            ls_tr, _ = sess.run([loss, train], feed_dict={
-                                y_in: y_train[start:end], x_in: x_train[start:end]})
-            ls_val = sess.run(
-                loss, feed_dict={y_in: y_val[start:end], x_in: x_val[start:end]})
-        pred_tr = sess.run(predictions, feed_dict={x_in: x_train})
-        pred_val = sess.run(predictions, feed_dict={x_in: x_val})
+            sess.run(train, feed_dict={
+                y_in: y_train[start:end], x_in: x_train[start:end], is_training: True})
+            #ls_val = sess.run(loss, feed_dict={y_in: y_val[start:end], x_in: x_val[start:end]})
+
+        ls_tr = sess.run(loss, feed_dict={
+                         y_in: y_train, x_in: x_train,  is_training: True})
+        ls_val = sess.run(
+            loss, feed_dict={y_in: y_val, x_in: x_val,  is_training: True})
+
+        pred_tr = sess.run(predictions, feed_dict={
+                           x_in: x_train,  is_training: True})
+        pred_val = sess.run(predictions, feed_dict={
+                            x_in: x_val,  is_training: True})
 
         r2_train = r2_score(y_train, np.array(pred_tr))
         r2_val = r2_score(y_val, np.array(pred_val))
@@ -81,7 +88,7 @@ with tf.Session() as sess:
 
         #print(pred_tr[:10], y_train[:10])
         #plt.hist(df + ind * 5, bins=40)
-        #plt.show(block=False)
+        # plt.show(block=False)
         # print(df.mean())
 
     dir_loc = save_loc.split('/')
@@ -94,27 +101,31 @@ with tf.Session() as sess:
 if plottable:
     plt.figure(figsize=(8, 12))
     plt.subplot(3, 1, 1)
-    plt.plot(epochs, r2_scores_tr)
-    plt.plot(epochs, r2_scores_val)
+    plt.plot(epochs, r2_scores_tr, label='TRAIN')
+    plt.plot(epochs, r2_scores_val, label='VALID')
     plt.title(f'r2 score for training for {ep_number} epochs')
     plt.xlabel('Epochs')
     plt.ylabel('r2 score')
+    plt.legend()
 
     plt.subplot(3, 1, 2)
-    plt.plot(epochs, losses_tr)
-    plt.plot(epochs, losses_val)
+    plt.plot(epochs, losses_tr, label='TRAIN')
+    plt.plot(epochs, losses_val, label='VALID')
     plt.title(f'Loss for training for {ep_number} epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
+    plt.legend()
 
     plt.subplot(3, 1, 3)
-    plt.plot(epochs, diff_tr)
-    plt.plot(epochs, diff_val)
-    #plt.fill_between(epochs, diff + diff_std, diff - diff_std, alpha=0.1)
+    plt.plot(epochs, diff_tr, label='TRAIN', color='blue')
+    plt.plot(epochs, diff_val, label='VALID', color='yellow')
+    #plt.fill_between(epochs, diff_tr + diff_tr_std, diff_tr - diff_tr_std, alpha=0.1, color= 'blue')
+    #plt.fill_between(epochs, diff_val + diff_val_std, diff_val - diff_val_std, alpha=0.1, color= 'yellow')
 
-    plt.title(f'Loss for training for {ep_number} epochs')
+    plt.title(f'Pull for training for {ep_number} epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Pull')
+    plt.legend()
 
     plt.tight_layout()
     plt.show()

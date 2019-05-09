@@ -10,14 +10,18 @@ class NeuralNet():
         self.strides = strides
         self.padding = "same"
         self.activation_fn = activation_fn
-        self.x_in = tf.placeholder(tf.float32, [None, 18, 2], name='InData')  # input data size
-        self.y_in = tf.placeholder(tf.int32, [None], name='OutData')  # output data size
+        self.x_in = tf.placeholder(
+            tf.float32, [None, 18, 2], name='InData')  # input data size
+        self.y_in = tf.placeholder(
+            tf.int32, [None], name='OutData')  # output data size
+        self.is_training = tf.placeholder(tf.bool, [], name = 'is_training') #training indicator
 
     def _get_conv(self, previous_layer, filter_size,  kernel_size, pool_size, last_flag=False):
         if not last_flag:
             x = tf.contrib.layers.conv2d(
                 previous_layer, filter_size, kernel_size=kernel_size, padding=self.padding, activation_fn=self.activation_fn)
-            x = tf.layers.max_pooling2d(inputs=x, pool_size=pool_size, strides=self.strides)
+            x = tf.layers.max_pooling2d(
+                inputs=x, pool_size=pool_size, strides=self.strides)
         else:
             x = tf.contrib.layers.conv2d(
                 previous_layer, filter_size, kernel_size=kernel_size, padding=self.padding, activation_fn=None)
@@ -26,12 +30,13 @@ class NeuralNet():
     def _get_dense(self, previous_layer, unit, last_flag=False):
         if not last_flag:
             x = tf.layers.dense(previous_layer, unit, self.activation_fn)
+            x = tf.contrib.layers.dropout(x, keep_prob = 0.25, is_training=self.is_training)
         else:
             x = tf.layers.dense(previous_layer, unit, None)
         return x
 
     def get_placeholders(self):
-        return self.x_in, self.y_in
+        return self.x_in, self.y_in, self.is_training
 
     def create_model(self):
         x = tf.reshape(self.x_in, [-1, 18, 2, 1])

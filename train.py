@@ -1,20 +1,21 @@
 import tensorflow as tf
 import numpy as np
-import matplotlib.pyplot as plt
 import argparse
 from sklearn.metrics import r2_score
-import seaborn as sns
 import os
+import time
 
 from model import NeuralNet
 from data import load_data
 from params import create_parser
 
-ep_number, batch_size, plottable, save_loc, thresh = create_parser()
+ep_number, batch_size, save_loc, thresh = create_parser()
 
+#path = '../../npz_original/orig-dataset.npz'
 path = '../../npz_small/small-dataset.npz'
 
 x_train, x_val, _, y_train, y_val, _ = load_data(path, thresh=thresh)
+
 
 filter_sizes = [32, 64, 128, 256]
 kernel_sizes = [[6, 2], [3, 1], [3, 1], [1, 1]]
@@ -53,6 +54,10 @@ with tf.Session() as sess:
     for ind, epoch in enumerate(epochs):
         # np.random.shuffle(x_train)
         # np.random.shuffle(y_train)
+        tic = time.time()
+        ls_tr = []
+        pred_tr = []
+        r2_train = []
         for i in range(n):
             start = batch_size * i
             end = batch_size * (i + 1)
@@ -60,20 +65,30 @@ with tf.Session() as sess:
                 y_in: y_train[start:end], x_in: x_train[start:end], is_training: True})
             #ls_val = sess.run(loss, feed_dict={y_in: y_val[start:end], x_in: x_val[start:end]})
 
-        ls_tr = sess.run(loss, feed_dict={
-                         y_in: y_train, x_in: x_train,  is_training: True})
+            ls_tr_batch = sess.run(loss, feed_dict={
+                y_in: y_train[start:end], x_in: x_train[start:end],  is_training: True})
+
+            pred_tr_batch = sess.run(predictions, feed_dict={
+                x_in: x_train[start:end],  is_training: True})
+
+            r2_train_batch = r2_score(
+                y_train[start:end], np.array(pred_tr_batch))
+
+            ls_tr.append(ls_tr_batch)
+            pred_tr.append(pred_tr_batch)
+            r2_train.append(r2_train_batch)
+
+        ls_tr = np.mean(ls_tr)
+        pred_tr = np.mean(pred_tr)
+        r2_train = np.mean(r2_train)
+
+        pred_val = sess.run(predictions, feed_dict={
+            x_in: x_val,  is_training: True})
         ls_val = sess.run(
             loss, feed_dict={y_in: y_val, x_in: x_val,  is_training: True})
 
-        pred_tr = sess.run(predictions, feed_dict={
-                           x_in: x_train,  is_training: True})
-        pred_val = sess.run(predictions, feed_dict={
-                            x_in: x_val,  is_training: True})
-
-        r2_train = r2_score(y_train, np.array(pred_tr))
         r2_val = r2_score(y_val, np.array(pred_val))
 
-        print(f'Epoch {epoch} gave:\nTRAIN: r2_score {r2_train} with loss of {ls_tr}\nVALID: r2_score {r2_val} with loss of {ls_val}')
         r2_scores_tr.append(r2_train)
         r2_scores_val.append(r2_val)
         losses_tr.append(ls_tr)
@@ -85,47 +100,19 @@ with tf.Session() as sess:
         df_val = (pred_val - y_val) / y_val
         diff_val[ind] = df_val.mean()
         diff_val_std[ind] = df_val.std()
-
+        tac = time.time()
+        print(f'\nEpoch {epoch} took {np.round(tac-tic,2)} seconds and gave following results:\nTRAIN: AVERAGED r2_score {r2_train} with loss of {ls_tr}\nVALID: r2_score {r2_val} with loss of {ls_val}')
         #print(pred_tr[:10], y_train[:10])
         #plt.hist(df + ind * 5, bins=40)
         # plt.show(block=False)
         # print(df.mean())
-
+    save_dict = dict(zip(["r2_scores_tr", "r2_scores_val", "losses_tr", "losses_val", "diff_tr", "diff_val", "diff_tr_std", "diff_val_std"], [
+                     r2_scores_tr, r2_scores_val, losses_tr, losses_val, diff_tr, diff_val, diff_tr_std, diff_val_std]))
     dir_loc = save_loc.split('/')
     dir_loc = dir_loc[:-2]
     dir_loc = '/'.join(dir_loc)
     if not os.path.exists(dir_loc):
         os.makedirs(dir_loc)
+        print(dir_loc)
     saver.save(sess, save_loc)
-
-if plottable:
-    plt.figure(figsize=(8, 12))
-    plt.subplot(3, 1, 1)
-    plt.plot(epochs, r2_scores_tr, label='TRAIN')
-    plt.plot(epochs, r2_scores_val, label='VALID')
-    plt.title(f'r2 score for training for {ep_number} epochs')
-    plt.xlabel('Epochs')
-    plt.ylabel('r2 score')
-    plt.legend()
-
-    plt.subplot(3, 1, 2)
-    plt.plot(epochs, losses_tr, label='TRAIN')
-    plt.plot(epochs, losses_val, label='VALID')
-    plt.title(f'Loss for training for {ep_number} epochs')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
-
-    plt.subplot(3, 1, 3)
-    plt.plot(epochs, diff_tr, label='TRAIN', color='blue')
-    plt.plot(epochs, diff_val, label='VALID', color='yellow')
-    #plt.fill_between(epochs, diff_tr + diff_tr_std, diff_tr - diff_tr_std, alpha=0.1, color= 'blue')
-    #plt.fill_between(epochs, diff_val + diff_val_std, diff_val - diff_val_std, alpha=0.1, color= 'yellow')
-
-    plt.title(f'Pull for training for {ep_number} epochs')
-    plt.xlabel('Epochs')
-    plt.ylabel('Pull')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
+    np.save(dir_loc + "/train.npy", save_dict)

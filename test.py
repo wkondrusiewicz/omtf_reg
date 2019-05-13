@@ -22,6 +22,7 @@ with open('basic_info.json', 'r') as f:
     save_loc = data["save_loc"]
     thresh = data["thresh"]
 
+#path = '../../npz_original/orig-dataset.npz'
 path = '../../npz_small/small-dataset.npz'
 
 _, _, x_test, _, _, y_test = load_data(path, thresh=thresh)
@@ -34,7 +35,7 @@ with tf.Session() as sess:
     n = x_test.shape[0] // test_batch_size
     losses = []
     r2_scores = []
-    print(f'Starting test:\n')
+    print(f'\nStarting test:')
     eff = np.zeros((n, len(pt_intervals)))
     for i in range(n):
         start = test_batch_size * i
@@ -46,24 +47,9 @@ with tf.Session() as sess:
         r2_scores.append(r2)
         eff[i] = eff_curve(pr, pt_intervals)
     print(
-        f'Test gave averaged: r2_score = {np.mean(r2_scores)} with loss = {np.mean(losses)}')
-
-
-fig = plt.figure(figsize=(12, 6))
-ax1 = fig.add_subplot(111)
-ax2 = ax1.twiny()
-
-ax1.plot(pt_intervals, eff.mean(axis=0))
-ax1.set_xlabel('$p_T$ [GeV]')
-
-ax2.set_xlim(ax1.get_xlim())
-ax2.set_xticks(pt_intervals[::2])
-ax2.tick_params(colors='red')
-ax2.set_xticklabels(range(1, len(pt_intervals) + 1, 2))
-ax2.set_xlabel('Corresponding $p_T$ codes', color='red')
-ax2.spines['top'].set_color('red')
-
-
-ax1.set_ylabel('Effectivness')
-plt.title(f'Effectivness curve', fontsize=16)
-plt.show()
+        f'Test gave averaged: r2_score = {np.mean(r2_scores)} with loss = {np.mean(losses)}\n')
+    save_dict = {"pt_intervals": pt_intervals, "eff": eff}
+    dir_loc = save_loc.split('/')
+    dir_loc = dir_loc[:-2]
+    dir_loc = '/'.join(dir_loc)
+    np.save(dir_loc+'/test.npy', save_dict)

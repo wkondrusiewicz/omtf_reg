@@ -54,10 +54,12 @@ with tf.Session() as sess:
     for ind, epoch in enumerate(epochs):
         # np.random.shuffle(x_train)
         # np.random.shuffle(y_train)
+
         tic = time.time()
         ls_tr = []
         pred_tr = []
         r2_train = []
+
         for i in range(n):
             start = batch_size * i
             end = batch_size * (i + 1)
@@ -78,6 +80,8 @@ with tf.Session() as sess:
             pred_tr.append(pred_tr_batch)
             r2_train.append(r2_train_batch)
 
+
+
         ls_tr = np.mean(ls_tr)
         pred_tr = np.mean(pred_tr)
         r2_train = np.mean(r2_train)
@@ -89,10 +93,15 @@ with tf.Session() as sess:
 
         r2_val = r2_score(y_val, np.array(pred_val))
 
+
         r2_scores_tr.append(r2_train)
         r2_scores_val.append(r2_val)
         losses_tr.append(ls_tr)
         losses_val.append(ls_val)
+
+        print('\n',pred_tr.shape, pred_val.shape, y_train.shape, y_val.shape)
+
+
         df_tr = (pred_tr - y_train) / y_train
         diff_tr[ind] = df_tr.mean()
         diff_tr_std[ind] = df_tr.std()
@@ -100,6 +109,7 @@ with tf.Session() as sess:
         df_val = (pred_val - y_val) / y_val
         diff_val[ind] = df_val.mean()
         diff_val_std[ind] = df_val.std()
+
         tac = time.time()
         print(f'\nEpoch {epoch} took {np.round(tac-tic,2)} seconds and gave following results:\nTRAIN: AVERAGED r2_score {r2_train} with loss of {ls_tr}\nVALID: r2_score {r2_val} with loss of {ls_val}')
         #print(pred_tr[:10], y_train[:10])

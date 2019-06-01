@@ -1,1 +1,1 @@
-{"epochs": 50, "batch_size": 256, "save_loc": "../model_save/tf_model/first", "thresh": 50000}
+{"epochs": 20, "batch_size": 256, "save_loc": "../model_save/tf_model/second", "thresh": null}

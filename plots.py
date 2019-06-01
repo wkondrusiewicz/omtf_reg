@@ -15,28 +15,30 @@ dir_loc = '/'.join(dir_loc)
 train_results = np.load(dir_loc + '/train.npy')[()]
 test_results = np.load(dir_loc + '/test.npy')[()]
 
-epochs = range(1,ep_number+1)
+ep_plot_thresh = 0
+
+epochs = range(1,ep_number+1)[ep_plot_thresh:]
 
 plt.figure(figsize=(8, 12))
 plt.subplot(3, 1, 1)
-plt.plot(epochs, train_results['r2_scores_tr'], label='TRAIN', color='b')
-plt.plot(epochs, train_results['r2_scores_val'], label='VALID', color='y')
+plt.plot(epochs, train_results['r2_scores_tr'][ep_plot_thresh:], label='TRAIN', color='b')
+plt.plot(epochs, train_results['r2_scores_val'][ep_plot_thresh:], label='VALID', color='y')
 plt.title(f'r2 score for training for {ep_number} epochs')
 plt.xlabel('Epochs')
 plt.ylabel('r2 score')
 plt.legend()
 
 plt.subplot(3, 1, 2)
-plt.plot(epochs, train_results['losses_tr'], label='TRAIN', color='b')
-plt.plot(epochs, train_results['losses_val'], label='VALID', color='y')
+plt.plot(epochs, train_results['losses_tr'][ep_plot_thresh:], label='TRAIN', color='b')
+plt.plot(epochs, train_results['losses_val'][ep_plot_thresh:], label='VALID', color='y')
 plt.title(f'Loss for training for {ep_number} epochs')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
 
 plt.subplot(3, 1, 3)
-plt.plot(epochs, train_results['diff_tr'], label='TRAIN', color='b')
-plt.plot(epochs, train_results['diff_val'], label='VALID', color='y')
+plt.plot(epochs, train_results['diff_tr'][ep_plot_thresh:], label='TRAIN', color='b')
+plt.plot(epochs, train_results['diff_val'][ep_plot_thresh:], label='VALID', color='y')
 #plt.fill_between(epochs, diff_tr + diff_tr_std, diff_tr - diff_tr_std, alpha=0.1, color= 'blue')
 #plt.fill_between(epochs, diff_val + diff_val_std, diff_val - diff_val_std, alpha=0.1, color= 'yellow')
 

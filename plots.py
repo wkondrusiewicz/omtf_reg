@@ -1,19 +1,17 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import json
+import os
 
 with open('basic_info.json', 'r') as f:
     data = json.load(f)
-    save_loc = data["save_loc"]
     ep_number = data['epochs']
+    path_model = data['path_model']
 
-dir_loc = save_loc.split('/')
-dir_loc = dir_loc[:-2]
-dir_loc = '/'.join(dir_loc)
-
+path_up = os.path.dirname(path_model)
 # [()] is needed as np load returns 0-dim object
-train_results = np.load(dir_loc + '/train.npy')[()]
-test_results = np.load(dir_loc + '/test.npy')[()]
+train_results = np.load(path_up + '/train.npy')[()]
+test_results = np.load(path_up + '/test.npy')[()]
 
 ep_plot_thresh = 0
 
@@ -48,7 +46,7 @@ plt.ylabel('Pull')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig(dir_loc+'/train_scores.pdf')
+plt.savefig(path_up+'/train_scores.pdf')
 
 
 fig = plt.figure(figsize=(12, 6))
@@ -68,4 +66,4 @@ ax2.spines['top'].set_color('red')
 
 ax1.set_ylabel('Effectivness')
 plt.title(f'Effectivness curve', fontsize=16)
-plt.savefig(dir_loc+'/test_scores.pdf')
+plt.savefig(path_up+'/test_scores.pdf')

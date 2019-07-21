@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
 from model2 import NeuralNet
-
+import os
 pt_intervals = [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 10, 12,
                 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100]
 
@@ -19,13 +19,13 @@ def eff_curve(p_req, intervals):
 
 with open('basic_info.json', 'r') as f:
     data = json.load(f)
-    save_loc = data["save_loc"]
     thresh = data["thresh"]
-
+    path_model = data['path_model']
+    path_data = data['path_data']
 #path = '../../npz_original/orig-dataset.npz'
 path = '../../npz_small/small-dataset.npz'
 
-_, _, x_test, _, _, y_test = load_data(path, thresh=thresh)
+_, _, x_test, _, _, y_test = load_data(path_data, thresh=thresh)
 
 test_batch_size = 256
 
@@ -45,8 +45,8 @@ init = tf.global_variables_initializer()  # initializer
 with tf.Session() as sess:
     sess.run(init)
     print(f'{x_test.shape[0]}')
-    new_saver = tf.train.import_meta_graph(save_loc + '.meta')
-    new_saver.restore(sess, save_loc)
+    new_saver = tf.train.import_meta_graph(path_model + '.meta')
+    new_saver.restore(sess, path_model)
 
     graph = tf.get_default_graph()
 
@@ -100,7 +100,4 @@ with tf.Session() as sess:
     print(
         f'Test gave averaged: r2_score = {r2_scores_te} with loss = {losses}\n')
     save_dict = {"pt_intervals": pt_intervals, "eff": eff}
-    dir_loc = save_loc.split('/')
-    dir_loc = dir_loc[:-2]
-    dir_loc = '/'.join(dir_loc)
-    np.save(dir_loc+'/test.npy', save_dict)
+    np.save(os.path.dirname(path_model)+'/test.npy', save_dict)

@@ -9,12 +9,18 @@ from model2 import NeuralNet
 from data import load_data
 from params import create_parser
 
-ep_number, batch_size, save_loc, thresh = create_parser()
+ep_number, batch_size, thresh, path_model, path_data = create_parser()
 
-#path = '../../npz_original/orig-dataset.npz'
-path = '../../npz_small/small-dataset.npz'
+path = '../../npz_original/orig-dataset.npz'
+# path = '../../npz_small/small-dataset.npz'
 
-x_train, x_val, _, y_train, y_val, _ = load_data(path, thresh=thresh)
+x_train, x_val, _, y_train, y_val, _ = load_data(path_data, thresh=thresh)
+
+if not os.path.exists(path_model):
+    os.makedirs(path_model)
+else:
+    print('Model save location already exists')
+
 
 print(y_train.shape, y_val.shape)
 
@@ -123,11 +129,6 @@ with tf.Session() as sess:
 
     save_dict = dict(zip(["r2_scores_tr", "r2_scores_val", "losses_tr", "losses_val", "diff_tr", "diff_val", "diff_tr_std", "diff_val_std"], [
                      r2_scores_tr, r2_scores_val, losses_tr, losses_val, diff_tr, diff_val, diff_tr_std, diff_val_std]))
-    dir_loc = save_loc.split('/')
-    dir_loc = dir_loc[:-2]
-    dir_loc = '/'.join(dir_loc)
-    if not os.path.exists(dir_loc):
-        os.makedirs(dir_loc)
-        print(dir_loc)
-    saver.save(sess, save_loc)
-    np.save(dir_loc + "/train.npy", save_dict)
+
+    saver.save(sess, path_model)
+    np.save(os.path.dirname(path_model) +  "/train.npy", save_dict)

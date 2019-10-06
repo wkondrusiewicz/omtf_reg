@@ -14,7 +14,8 @@ ep_number, batch_size, thresh, path_model, path_data = create_parser()
 path = '../../npz_original/orig-dataset.npz'
 # path = '../../npz_small/small-dataset.npz'
 
-x_train, x_val, _, y_train, y_val, _ = load_data(path_data, thresh=thresh)
+x_train, x_val, _, y_train, y_val, _ = load_data(
+    path_data, thresh=thresh)
 
 if not os.path.exists(path_model):
     os.makedirs(path_model)
@@ -34,7 +35,8 @@ net = NeuralNet(filter_sizes, kernel_sizes, pool_sizes, hidden_units)
 
 x_in, y_in, is_training = net.get_placeholders()
 
-shuffle_subset_size = x_train.shape[0] #we have to ensure that it is greater or equal than size os training set, for val and test will be bigger that their sizes
+# we have to ensure that it is greater or equal than size os training set, for val and test will be bigger that their sizes
+shuffle_subset_size = x_train.shape[0]
 
 net.set_basic_params(shuffle_subset_size, batch_size)
 
@@ -46,9 +48,11 @@ loss = tf.losses.mean_squared_error(
 loss = tf.reduce_mean(loss, name='loss')  # take the mean of loss
 
 
-update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS) # to make batch_norm work properly
+# to make batch_norm work properly
+update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 with tf.control_dependencies(update_ops):
-    train_op = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(loss)  # optimizer
+    train_op = tf.train.AdamOptimizer(
+        learning_rate=1e-3).minimize(loss)  # optimizer
 
 init = tf.global_variables_initializer()  # initializern
 
@@ -67,13 +71,18 @@ diff_val_std = np.zeros(ep_number)
 
 with tf.Session() as sess:
     sess.run(init)  # init variables
-    n_tr = 1+x_train.shape[0] // batch_size
-    n_val = 1+x_val.shape[0] // batch_size
+    n_tr = 1 + x_train.shape[0] // batch_size
+    n_val = 1 + x_val.shape[0] // batch_size
+    preds_to_save_train = {}
+    preds_to_save_val = {}
+    labels_to_save_train = {}
+    labels_to_save_val = {}
     for ind, epoch in enumerate(epochs):
         # print("TRAIN\n")
         tic = time.time()
 
-        sess.run(train_iterator, feed_dict={x_in: x_train, y_in: y_train})
+        sess.run(train_iterator, feed_dict={
+                 x_in: x_train, y_in: y_train})
         tot_loss = 0
         pred_tr = np.zeros(0)
         labels_tr = np.zeros(0)
@@ -94,12 +103,10 @@ with tf.Session() as sess:
 
         # print("VALID\n")
 
-
         losses_tr[ind] = losses.mean()
         r2_scores_tr[ind] = r2_score(labels_tr, pred_tr)
         diff_tr[ind] = np.mean((pred_tr - labels_tr) / labels_tr)
         diff_tr_std[ind] = np.std((pred_tr - labels_tr) / labels_tr)
-
 
         sess.run(val_iterator, feed_dict={x_in: x_val, y_in: y_val})
         tot_loss = 0
@@ -109,7 +116,8 @@ with tf.Session() as sess:
         losses = np.zeros(n_val)
         for i in range(n_val):
             # _, loss_value, pred, lab = sess.run([train_op, loss, predictions, labels], feed_dict={is_training: True})
-            loss_value, pred, lab = sess.run([loss, predictions, labels], feed_dict={is_training: False})
+            loss_value, pred, lab = sess.run(
+                [loss, predictions, labels], feed_dict={is_training: False})
             tot_loss += loss_value
             pred_val = np.concatenate([pred_val, pred])
             labels_val = np.concatenate([labels_val, lab])
@@ -123,12 +131,18 @@ with tf.Session() as sess:
         diff_val[ind] = np.mean((pred_val - labels_val) / labels_val)
         diff_val_std[ind] = np.std((pred_val - labels_val) / labels_val)
 
+        preds_to_save_train[epoch] = pred_tr
+        preds_to_save_val[epoch] = pred_val
+        labels_to_save_train[epoch] = labels_tr
+        labels_to_save_val[epoch] = labels_val
+
         tac = time.time()
 
-        print(f'\nEpoch {epoch} took {np.round(tac-tic,2)} seconds and gave following results:\nTRAIN: r2_score {r2_scores_tr[ind]} with loss of {losses_tr[ind]}\nVALID: r2_score {r2_scores_val[ind]} with loss of {losses_val[ind]}')
+        print(
+            f'\nEpoch {epoch} took {np.round(tac-tic,2)} seconds and gave following results:\nTRAIN: r2_score {r2_scores_tr[ind]} with loss of {losses_tr[ind]}\nVALID: r2_score {r2_scores_val[ind]} with loss of {losses_val[ind]}')
 
-    save_dict = dict(zip(["r2_scores_tr", "r2_scores_val", "losses_tr", "losses_val", "diff_tr", "diff_val", "diff_tr_std", "diff_val_std"], [
-                     r2_scores_tr, r2_scores_val, losses_tr, losses_val, diff_tr, diff_val, diff_tr_std, diff_val_std]))
+    save_dict = dict(zip(["r2_scores_tr", "r2_scores_val", "losses_tr", "losses_val", "diff_tr", "diff_val", "diff_tr_std", "diff_val_std", 'predictions_train', 'predictions_val', 'labels_train', 'labels_val'], [
+                     r2_scores_tr, r2_scores_val, losses_tr, losses_val, diff_tr, diff_val, diff_tr_std, diff_val_std, preds_to_save_train, preds_to_save_val, labels_to_save_train, labels_to_save_val]))
 
     saver.save(sess, path_model)
-    np.save(os.path.dirname(path_model) +  "/train.npy", save_dict)
+    np.save(os.path.dirname(path_model) + "/train.npy", save_dict)

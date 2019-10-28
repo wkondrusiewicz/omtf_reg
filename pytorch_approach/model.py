@@ -97,7 +97,7 @@ class omtfModel:
             phase_loss += loss.item()
         phase_loss /= len(self.dataloaders['TEST'])
         print(
-            f'TEST LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}')
+            f'\nTEST LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}')
 
     def save_model(self):
         os.makedirs(self.experiment_dirpath, exist_ok=True)

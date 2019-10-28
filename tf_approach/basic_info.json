@@ -1,0 +1,1 @@
+{"epochs": 200, "batch_size": 256, "thresh": null, "path_model": "../orig_model/model", "path_data": "../../npz_original/orig-dataset.npz"}

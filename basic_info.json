@@ -1,1 +1,0 @@
-{"epochs": 3, "batch_size": 256, "thresh": 10000, "path_model": "../temp_save/hehe", "path_data": "../../npz_small/small-dataset.npz"}

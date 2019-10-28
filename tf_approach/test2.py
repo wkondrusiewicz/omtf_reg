@@ -22,8 +22,8 @@ with open('basic_info.json', 'r') as f:
     thresh = data["thresh"]
     path_model = data['path_model']
     path_data = data['path_data']
-#path = '../../npz_original/orig-dataset.npz'
-path = '../../npz_small/small-dataset.npz'
+path = '../../npz_original/orig-dataset.npz'
+# path = '../../npz_small/small-dataset.npz'
 
 _, _, x_test, _, _, y_test = load_data(path_data, thresh=thresh)
 
@@ -71,12 +71,13 @@ with tf.Session() as sess:
     losses = np.zeros(n_te)
     for i in range(n_te):
         loss_value, pred, lab = sess.run(["loss:0", "predictions:0", "labels:0"], feed_dict={"is_training:0": False})
+        # print(pred.shape, lab.shape, type(pred), type(lab))
         tot_loss += loss_value
         pred_te = np.concatenate([pred_te, pred])
         labels_te = np.concatenate([labels_te, lab])
         losses[i] = loss_value
         eff[i] = eff_curve(pred, pt_intervals)
-
+    # print(pred_te.shape)
     losses = losses.mean()
     r2_scores_te = r2_score(labels_te, pred_te)
 
@@ -99,5 +100,5 @@ with tf.Session() as sess:
 
     print(
         f'Test gave averaged: r2_score = {r2_scores_te} with loss = {losses}\n')
-    save_dict = {"pt_intervals": pt_intervals, "eff": eff}
+    save_dict = {"pt_intervals": pt_intervals, "eff": eff, "predictions": pred_te, "labels": labels_te}
     np.save(os.path.dirname(path_model)+'/test.npy', save_dict)

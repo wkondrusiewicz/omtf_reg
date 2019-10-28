@@ -39,9 +39,10 @@ def main():
                       experiment_dirpath=args.experiment_dirpath)
     model.train(epochs=args.epochs, init_lr=args.init_lr)
     model.predict()
+    
     training_params = {'epochs': args.epochs, 'init_lr': args.init_lr, 'train_batch_size': args.train_batch_size,
                        'test_batch_size': args.test_batch_size, 'data_path': os.path.abspath(args.data_path)}
-                       
+
     with open(os.path.join(args.experiment_dirpath, 'training_params.json'), 'w') as f:
         json.dump(training_params, f)
 

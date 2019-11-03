@@ -2,7 +2,6 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-
 class omtfDataset(Dataset):
     def __init__(self, data_path: str, mode: str, threshold: int = 100):
         """

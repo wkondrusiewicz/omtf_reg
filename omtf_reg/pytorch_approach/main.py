@@ -4,9 +4,9 @@ import json
 
 from torch.utils.data import DataLoader
 
-from dataset import omtfDataset
-from net import omtfNet
-from model import omtfModel
+from omtf_reg.pytorch_approach.dataset import omtfDataset
+from omtf_reg.pytorch_approach.net import omtfNet
+from omtf_reg.pytorch_approach.model import omtfModel
 
 
 def parse_args():
@@ -39,7 +39,7 @@ def main():
                       experiment_dirpath=args.experiment_dirpath)
     model.train(epochs=args.epochs, init_lr=args.init_lr)
     model.predict()
-    
+
     training_params = {'epochs': args.epochs, 'init_lr': args.init_lr, 'train_batch_size': args.train_batch_size,
                        'test_batch_size': args.test_batch_size, 'data_path': os.path.abspath(args.data_path)}
 

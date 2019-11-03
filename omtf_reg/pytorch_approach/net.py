@@ -11,10 +11,10 @@ class omtfNet(nn.Module):
         # self.conv3 = ConvBlock(128, 512, (2, 1))
         # self.conv4 = ConvBlock(512, 1024, (1, 1))
 
-        self.conv1 = ConvBlock(1, 32, (1, 3), (0, 1))
-        self.conv2 = ConvBlock(32, 128, (3, 1), (1, 0))
+        self.conv1 = ConvBlock(1, 32, (3, 3), (1, 1))
+        self.conv2 = ConvBlock(32, 128, (3, 2), (1, 0))
         self.conv3 = ConvBlock(128, 512, (3, 1), (1,0))
-        self.conv4 = ConvBlock(512, 1024, (3, 1))        
+        self.conv4 = ConvBlock(512, 1024, (3, 1))
 
         self.dense0 = DenseBlock(1024, 512)
         self.dense1 = DenseBlock(512, 256)
@@ -31,7 +31,7 @@ class omtfNet(nn.Module):
 
         x = self.conv1(x)
         x = self.conv2(x)
-        x = nn.MaxPool2d(kernel_size=(2, 2))(x)
+        x = nn.MaxPool2d(kernel_size=(2, 1))(x)
         x = self.conv3(x)
         x = nn.MaxPool2d(kernel_size=(3, 1))(x)
         x = self.conv4(x)

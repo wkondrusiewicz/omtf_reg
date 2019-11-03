@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Mapping
 import numpy as np
 
@@ -7,8 +8,8 @@ import torch.nn as nn
 
 from sklearn.metrics import r2_score
 
-from net import omtfNet
-from dataset import omtfDataset
+from omtf_reg.pytorch_approach.net import omtfNet
+from omtf_reg.pytorch_approach.dataset import omtfDataset
 
 
 class omtfModel:
@@ -20,7 +21,10 @@ class omtfModel:
         self.net = None
 
     def train(self, init_lr=1e-3, epochs=20):
-        self.net = omtfNet()
+        assert 'TRAIN' in self.dataloaders.keys(), 'Missing train dataloader'
+        assert 'VALID' in self.dataloaders.keys(), 'Missing validation dataloader'
+
+        self.net = omtfNet() if self.net is None else self.net
         self.net.cuda()
         optimizer = torch.optim.Adam(self.net.parameters(), lr=init_lr)
 
@@ -29,10 +33,19 @@ class omtfModel:
         preds_to_save['VALID'] = {}
 
         labels_to_save = {}
-        labels_to_save['TRAIN'] = {}
-        labels_to_save['VALID'] = {}
+        labels_to_save['TRAIN'] = []
+        labels_to_save['VALID'] = []
+
+        preds_save_path = os.path.join(
+            self.experiment_dirpath, 'predictions')
+        labels_save_path = os.path.join(
+            self.experiment_dirpath, 'labels')
+
+        os.makedirs(preds_save_path, exist_ok=True)
+        os.makedirs(labels_save_path, exist_ok=True)
 
         for epoch in range(1, epochs + 1):
+            t1 = time.time()
             print(f'Epoch {epoch}')
 
             for phase in ['TRAIN', 'VALID']:
@@ -42,8 +55,8 @@ class omtfModel:
                     self.net.eval()   # Set model to evaluate mode
 
                 phase_loss = 0
-                gathered_labels = []
-                gathered_preds = []
+                gathered_labels = np.zeros(0)
+                gathered_preds = np.zeros(0)
                 for i, item in enumerate(self.dataloaders[phase]):
                     X, y_gt = item
                     X = X.cuda()
@@ -54,16 +67,19 @@ class omtfModel:
                         y_pred = self.net(X)
                         loss = self._loss_fn(y_pred, y_gt)
                         phase_loss = phase_loss + loss.item()
-                        gathered_labels = gathered_labels + \
-                            y_gt.view(-1).tolist()
-                        gathered_preds = gathered_preds + \
-                            y_pred.view(-1).tolist()
+                        gathered_labels = np.concatenate(
+                            [gathered_labels, np.array(y_gt.view(-1).tolist())])
+                        gathered_preds = np.concatenate(
+                            [gathered_preds, np.array(y_pred.view(-1).tolist())])
+
                         if phase == 'TRAIN':
                             loss.backward()
                             optimizer.step()
 
-                preds_to_save[phase][epoch] = gathered_preds
-                labels_to_save[phase][epoch] = gathered_labels
+                np.savez_compressed(os.path.join(preds_save_path,
+                                     f'{phase}_{epoch}.npz'), data=gathered_preds)
+                np.savez_compressed(os.path.join(labels_save_path,
+                                     f'{phase}_{epoch}.npz'), data=gathered_labels)
 
                 phase_loss /= len(self.dataloaders[phase])
                 print(
@@ -72,11 +88,12 @@ class omtfModel:
             if epoch % self.snapshot_frequency == 0:
                 self.save_model()
                 print('Snapshot successfully created!')
-        save_dict = {'labels': labels_to_save,
-                     'predictions': preds_to_save}
+
+            t2 = time.time()
+            print(f'Time elapsed: {t2-t1} seconds\n')
+
+
         self.save_model()
-        np.save(os.path.join(self.experiment_dirpath,
-                             'train_labels_and_preds.npy'), save_dict)
 
     def predict(self):
         assert 'TEST' in self.dataloaders.keys(), 'Missing test dataloader'
@@ -103,6 +120,11 @@ class omtfModel:
         os.makedirs(self.experiment_dirpath, exist_ok=True)
         torch.save(self.net, os.path.join(
             self.experiment_dirpath, 'model.pth'))
+
+    def load_model(self, model_dirpath):
+        net = torch.load(model_dirpath)
+        self.net = net
+        print('Model loaded successfully!')
 
     def get_statistics(self, gathered_labels, gathered_preds):
         r2 = r2_score(gathered_labels, gathered_preds)

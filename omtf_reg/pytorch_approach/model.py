@@ -1,5 +1,6 @@
 import os
 import time
+import json
 from typing import Mapping
 import numpy as np
 
@@ -13,7 +14,7 @@ from omtf_reg.pytorch_approach.dataset import omtfDataset
 
 
 class omtfModel:
-    def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(), experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10):
+    def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.MSELoss(), experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10):
         self._loss_fn = loss_fn
         self.dataloaders = dataloaders
         self.experiment_dirpath = experiment_dirpath
@@ -28,13 +29,7 @@ class omtfModel:
         self.net.cuda()
         optimizer = torch.optim.Adam(self.net.parameters(), lr=init_lr)
 
-        preds_to_save = {}
-        preds_to_save['TRAIN'] = {}
-        preds_to_save['VALID'] = {}
-
-        labels_to_save = {}
-        labels_to_save['TRAIN'] = []
-        labels_to_save['VALID'] = []
+        things_to_save = {'loss': {'TRAIN': {}, 'VALID': {}}}
 
         preds_save_path = os.path.join(
             self.experiment_dirpath, 'predictions')
@@ -85,6 +80,8 @@ class omtfModel:
                 print(
                     f'{phase} LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}')
 
+                things_to_save['loss'][phase][epoch]=phase_loss
+
             if epoch % self.snapshot_frequency == 0:
                 self.save_model()
                 print('Snapshot successfully created!')
@@ -92,6 +89,8 @@ class omtfModel:
             t2 = time.time()
             print(f'Time elapsed: {t2-t1} seconds\n')
 
+        with open(os.path.join(self.experiment_dirpath, 'losses.json'), 'w') as f:
+            json.dump(things_to_save, f)
 
         self.save_model()
 

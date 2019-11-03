@@ -12,13 +12,14 @@ class omtfNet(nn.Module):
         # self.conv4 = ConvBlock(512, 1024, (1, 1))
 
         self.conv1 = ConvBlock(1, 32, (3, 3), (1, 1))
-        self.conv2 = ConvBlock(32, 128, (3, 2), (1, 0))
-        self.conv3 = ConvBlock(128, 512, (3, 1), (1,0))
-        self.conv4 = ConvBlock(512, 1024, (3, 1))
+        self.conv2 = ConvBlock(32, 64, (3, 2), (1, 0))
+        self.conv3 = ConvBlock(64, 128, (3, 1), (1,0))
+        self.conv4 = ConvBlock(128, 256, (3, 1))
 
-        self.dense0 = DenseBlock(1024, 512)
-        self.dense1 = DenseBlock(512, 256)
-        self.dense2 = DenseBlock(256, 1, is_last_layer=True)
+        self.dense1 = DenseBlock(256, 4096)
+        self.dense2 = DenseBlock(4096, 1024)
+        self.dense3 = DenseBlock(1024, 256)
+        self.dense4 = DenseBlock(256, 1, is_last_layer=True)
 
     def forward(self, x):
         # x = self.conv1(x)
@@ -37,9 +38,10 @@ class omtfNet(nn.Module):
         x = self.conv4(x)
         x = x.view(-1, torch.prod(torch.tensor(x.size()[1:])))
 
-        x = self.dense0(x)
         x = self.dense1(x)
         x = self.dense2(x)
+        x = self.dense3(x)
+        x = self.dense4(x)
         return x
 
 

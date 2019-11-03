@@ -14,7 +14,7 @@ from omtf_reg.pytorch_approach.dataset import omtfDataset
 
 
 class omtfModel:
-    def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.MSELoss(), experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10):
+    def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(), experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10):
         self._loss_fn = loss_fn
         self.dataloaders = dataloaders
         self.experiment_dirpath = experiment_dirpath

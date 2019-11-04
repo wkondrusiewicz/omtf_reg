@@ -14,7 +14,9 @@ from omtf_reg.pytorch_approach.dataset import omtfDataset
 
 
 class omtfModel:
-    def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(), experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10):
+    def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(),
+                 experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10):
+
         self._loss_fn = loss_fn
         self.dataloaders = dataloaders
         self.experiment_dirpath = experiment_dirpath
@@ -72,15 +74,15 @@ class omtfModel:
                             optimizer.step()
 
                 np.savez_compressed(os.path.join(preds_save_path,
-                                     f'{phase}_{epoch}.npz'), data=gathered_preds)
+                                                 f'{phase}_{epoch}.npz'), data=gathered_preds)
                 np.savez_compressed(os.path.join(labels_save_path,
-                                     f'{phase}_{epoch}.npz'), data=gathered_labels)
+                                                 f'{phase}_{epoch}.npz'), data=gathered_labels)
 
                 phase_loss /= len(self.dataloaders[phase])
                 print(
                     f'{phase} LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}')
 
-                things_to_save['loss'][phase][epoch]=phase_loss
+                things_to_save['loss'][phase][epoch] = phase_loss
 
             if epoch % self.snapshot_frequency == 0:
                 self.save_model()
@@ -99,19 +101,25 @@ class omtfModel:
         self.net.cuda()
         self.net.eval()
 
-        gathered_labels = []
-        gathered_preds = []
         phase_loss = 0
+        gathered_labels = np.zeros(0)
+        gathered_preds = np.zeros(0)
+        os.makedirs(os.path.join(
+            self.experiment_dirpath, 'test'), exist_ok=True)
         for item in self.dataloaders['TEST']:
             X, y_gt = item
             X = X.cuda()
             y_gt = y_gt.cuda()
             y_pred = self.net(X)
             loss = self._loss_fn(y_pred, y_gt)
-            gathered_preds = gathered_preds + y_pred.view(-1).tolist()
-            gathered_labels = gathered_labels + y_gt.view(-1).tolist()
+            gathered_labels = np.concatenate(
+                [gathered_labels, np.array(y_gt.view(-1).tolist())])
+            gathered_preds = np.concatenate(
+                [gathered_preds, np.array(y_pred.view(-1).tolist())])
             phase_loss += loss.item()
         phase_loss /= len(self.dataloaders['TEST'])
+        np.savez_compressed(os.path.join(self.experiment_dirpath, 'test',
+                                         f'labels_and_preds.npz'), data={'predictions': gathered_preds, 'labels': gathered_labels})
         print(
             f'\nTEST LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}')
 

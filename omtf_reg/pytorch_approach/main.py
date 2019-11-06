@@ -5,7 +5,7 @@ import json
 from torch.utils.data import DataLoader
 
 from omtf_reg.pytorch_approach.dataset import omtfDataset
-from omtf_reg.pytorch_approach.net import omtfNet
+from omtf_reg.pytorch_approach.net import omtfNet, omtfNetBig, omtfNetBigger
 from omtf_reg.pytorch_approach.model import omtfModel
 
 
@@ -25,9 +25,15 @@ def parse_args():
                         help='Where to save the model', required=True, type=str)
     parser.add_argument(
         '--data_path', help='Path to data', required=True, type=str)
+    parser.add_argument(
+        '--net', choices=['omtfNet', 'omtfNetBig', 'omtfNetBigger'], default='omtfNet')
 
     args = parser.parse_args()
     return args
+
+
+def get_net_architecture(name):
+    return {'omtfNet': omtfNet, 'omtfNetBig': omtfNetBig, 'omtfNetBigger': omtfNetBigger}[name]
 
 
 def main():
@@ -35,8 +41,9 @@ def main():
     dataloaders = {'TRAIN': DataLoader(omtfDataset(data_path=args.data_path, mode='TRAIN'), batch_size=args.train_batch_size, shuffle=True),
                    'VALID': DataLoader(omtfDataset(data_path=args.data_path, mode='VALID'), batch_size=args.test_batch_size),
                    'TEST': DataLoader(omtfDataset(data_path=args.data_path, mode='TEST'), batch_size=args.test_batch_size)}
+    net = get_net_architecture(args.net)()
     model = omtfModel(dataloaders=dataloaders,
-                      experiment_dirpath=args.experiment_dirpath)
+                      experiment_dirpath=args.experiment_dirpath, net=net)
     model.train(epochs=args.epochs, init_lr=args.init_lr)
     model.predict()
 

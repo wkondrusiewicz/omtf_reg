@@ -15,13 +15,13 @@ from omtf_reg.pytorch_approach.dataset import omtfDataset
 
 class omtfModel:
     def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(),
-                 experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10):
+                 experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10, net=None):
 
         self._loss_fn = loss_fn
         self.dataloaders = dataloaders
         self.experiment_dirpath = experiment_dirpath
         self.snapshot_frequency = snapshot_frequency
-        self.net = None
+        self.net = net
 
     def train(self, init_lr=1e-3, epochs=20):
         assert 'TRAIN' in self.dataloaders.keys(), 'Missing train dataloader'
@@ -133,6 +133,12 @@ class omtfModel:
         self.net = net
         print('Model loaded successfully!')
 
+    def get_net_size(self):
+        assert self.net is not None, 'net attribute must be set earlier'
+        net_parameters = filter(lambda p: p.requires_grad, self.net.parameters())
+        params = sum([np.prod(p.size()) for p in model_parameters])
+        return params
+    
     def get_statistics(self, gathered_labels, gathered_preds):
         r2 = r2_score(gathered_labels, gathered_preds)
         return r2

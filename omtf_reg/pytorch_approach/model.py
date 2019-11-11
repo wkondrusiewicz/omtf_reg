@@ -10,8 +10,6 @@ import torch.nn as nn
 from sklearn.metrics import r2_score
 
 from omtf_reg.pytorch_approach.net import omtfNet
-from omtf_reg.pytorch_approach.dataset import omtfDataset
-
 
 class omtfModel:
     def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(),
@@ -138,7 +136,7 @@ class omtfModel:
         net_parameters = filter(lambda p: p.requires_grad, self.net.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
         return params
-    
+
     def get_statistics(self, gathered_labels, gathered_preds):
         r2 = r2_score(gathered_labels, gathered_preds)
         return r2

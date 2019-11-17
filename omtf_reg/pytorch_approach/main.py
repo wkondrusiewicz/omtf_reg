@@ -4,7 +4,7 @@ import json
 
 from torch.utils.data import DataLoader
 
-from omtf_reg.pytorch_approach.datasets import omtfDataset, omtfDatasetInverse
+from omtf_reg.pytorch_approach.datasets import omtfDataset, omtfDatasetInverse, omtfDatasetMasked
 from omtf_reg.pytorch_approach.net import omtfNet, omtfNetBig, omtfNetBigger
 from omtf_reg.pytorch_approach.model import omtfModel
 
@@ -28,7 +28,9 @@ def parse_args():
     parser.add_argument(
         '--net', choices=['omtfNet', 'omtfNetBig', 'omtfNetBigger'], default='omtfNet')
     parser.add_argument(
-        '--dataset', choices=['omtfDataset', 'omtfDatasetInverse'], default='omtfDataset')
+        '--dataset_type', choices=['omtfDataset', 'omtfDatasetInverse', 'omtfDatasetMasked'], default='omtfDataset')
+    parser.add_argument('--mask_path', default=None)
+
 
     args = parser.parse_args()
     return args
@@ -39,14 +41,15 @@ def get_net_architecture(name):
 
 
 def get_dataset_architecture(name):
-    return {'omtfDataset': omtfDataset, 'omtfDatasetInverse': omtfDatasetInverse}[name]
+    return {'omtfDataset': omtfDataset, 'omtfDatasetInverse': omtfDatasetInverse, 'omtfDatasetMasked': omtfDatasetMasked}[name]
 
 
 def main():
     args = parse_args()
-    dataloaders = {'TRAIN': DataLoader(get_dataset_architecture(args.dataset)(data_path=args.data_path, mode='TRAIN'), batch_size=args.train_batch_size, shuffle=True),
-                   'VALID': DataLoader(get_dataset_architecture(args.dataset)(data_path=args.data_path, mode='VALID'), batch_size=args.test_batch_size),
-                   'TEST': DataLoader(get_dataset_architecture(args.dataset)(data_path=args.data_path, mode='TEST'), batch_size=args.test_batch_size)}
+    kw = {'mask_path': args.mask_path} if args.mask_path is not None else {}
+    dataloaders = {'TRAIN': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='TRAIN', **kw), batch_size=args.train_batch_size, shuffle=True),
+                   'VALID': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='VALID', **kw), batch_size=args.test_batch_size),
+                   'TEST': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='TEST', **kw), batch_size=args.test_batch_size)}
 
     net = get_net_architecture(args.net)()
     model = omtfModel(dataloaders=dataloaders,
@@ -55,7 +58,7 @@ def main():
     model.predict()
 
     training_params = {'epochs': args.epochs, 'init_lr': args.init_lr, 'train_batch_size': args.train_batch_size,
-                       'test_batch_size': args.test_batch_size, 'data_path': os.path.abspath(args.data_path)}
+                       'test_batch_size': args.test_batch_size, 'data_path': os.path.abspath(args.data_path), 'dataset_type': args.dataset_type}
 
     with open(os.path.join(args.experiment_dirpath, 'training_params.json'), 'w') as f:
         json.dump(training_params, f)

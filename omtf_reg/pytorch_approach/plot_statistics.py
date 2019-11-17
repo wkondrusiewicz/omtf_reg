@@ -47,9 +47,14 @@ def get_pull(labels, preds):
     return np.mean((preds - labels) / labels)
 
 
-def draw_effectivness_curve(test_data: dict, pt_intervals: list, cut: float, figsize: tuple = (8, 4), outpath=None):
+def draw_effectivness_curve(test_data: dict, pt_intervals: list, cut: float, figsize: tuple = (8, 4), outpath=None, is_inverse=False):
     labels = test_data['labels']
     preds = test_data['predictions']
+
+    if is_inverse:
+        labels = 1/labels
+        preds = 1/preds
+
     h2 = np.histogram(labels[preds > cut], pt_intervals)[0]
     h1 = np.histogram(labels, pt_intervals)[0]
     plt.figure(figsize=figsize)
@@ -127,6 +132,9 @@ def main():
     args = parse_args()
     plots_path = os.path.join(args.experiment_dirpath, 'plots')
     os.makedirs(plots_path, exist_ok=True)
+    with open(os.path.join(args.experiment_dirpath, 'training_params.json'), 'r') as f:
+        training_params = json.load(f)
+    is_inverse = True if 'Inverse' in training_params['dataset_type'] else False
     with open(os.path.join(args.experiment_dirpath, 'losses.json'), 'r') as f:
         json_data = json.load(f)
     draw_losses(json_data, outpath=os.path.join(plots_path, 'losses.pdf'))
@@ -134,7 +142,7 @@ def main():
     draw_pull(args.experiment_dirpath, outpath=os.path.join(plots_path, 'pulls.pdf'))
     test_data = np.load(os.path.join(args.experiment_dirpath, 'test', 'labels_and_preds.npz'), allow_pickle=True)['data'][()]
     for cut in pt_intervals:
-        draw_effectivness_curve(test_data, pt_intervals, cut=cut, outpath=os.path.join(plots_path, f'effectivness_curve_cut_{cut}.pdf'))
+        draw_effectivness_curve(test_data, pt_intervals, cut=cut, outpath=os.path.join(plots_path, f'effectivness_curve_cut_{cut}.pdf'), is_inverse=is_inverse)
 
 if __name__ == '__main__':
     main()

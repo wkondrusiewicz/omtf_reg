@@ -11,6 +11,8 @@ from sklearn.metrics import r2_score
 
 from omtf_reg.pytorch_approach.net import omtfNet
 
+
+
 class omtfModel:
     def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(),
                  experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10, net=None):

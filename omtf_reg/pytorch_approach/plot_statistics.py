@@ -4,6 +4,7 @@ import json
 import os
 import glob
 import argparse
+import seaborn as sns
 
 from tqdm import tqdm
 
@@ -47,23 +48,40 @@ def get_pull(labels, preds):
     return np.mean((preds - labels) / labels)
 
 
-def draw_effectivness_curve(test_npz: dict, test_data: dict, pt_intervals: list, pt_code_cut: float, figsize: tuple = (16, 8), outpath=None):
+def draw_effectivness_curve(test_npz: dict, test_data: dict, pt_intervals: list, pt_code_cut: float, figsize: tuple = (16, 8), outpath=None, mask_type='none'):
     labels = test_data['labels']
     preds = test_data['predictions']
     labels_omtf = test_npz['PT_CODE']
     preds_omtf = test_npz['OMTF_PT']
     omtf_quality = test_npz['OMTF_QUALITY']
 
+    mask_omtf_upper = test_npz['PT_VAL'] < 100
+    preds_omtf = preds_omtf[mask_omtf_upper]
+    labels_omtf = labels_omtf[mask_omtf_upper]
+
+    mask_omtf_pt = preds_omtf > 0
+    mask_omtf_quality = omtf_quality[mask_omtf_upper] == 12
+
+    mask_reg_pt = preds > 0
+    mask_reg_quality = omtf_quality[mask_omtf_upper] == 12
+
+    mask_dict = {
+        'none': (np.full(preds.shape, True), np.full(preds_omtf.shape, True)),
+        'quality_12': (mask_reg_quality, mask_omtf_quality),
+        'pt': (mask_reg_pt, mask_omtf_pt),
+        'full': (mask_reg_pt & mask_reg_quality, mask_omtf_quality & mask_omtf_pt)
+    }
+
+    preds = preds[mask_dict[mask_type][0]]
+    labels = labels[mask_dict[mask_type][0]]
+
+    preds_omtf = preds_omtf[mask_dict[mask_type][1]]
+    labels_omtf = labels_omtf[mask_dict[mask_type][1]]
+
     # nn data
     pt_cut = pt_intervals[pt_code_cut - 1]
     h2 = np.histogram(labels[preds > pt_cut], pt_intervals)[0]
     h1 = np.histogram(labels, pt_intervals)[0]
-
-    mask = test_npz['PT_VAL'] < 100
-    mask_omtf_pt = preds_omtf > 0
-    mask_omtf_quality = omtf_quality == 12
-    preds_omtf = preds_omtf[mask_omtf_quality & mask_omtf_pt]
-    labels_omtf = labels_omtf[mask_omtf_quality & mask_omtf_pt]
 
     h2_omtf = np.histogram(labels_omtf[preds_omtf > pt_code_cut], bins=range(
         1, len(pt_intervals) + 1))[0]
@@ -92,7 +110,6 @@ def draw_effectivness_curve(test_npz: dict, test_data: dict, pt_intervals: list,
     else:
         plt.show()
     plt.close()
-
 
 def draw_losses(json_data: dict, figsize: tuple = (8, 4), outpath=None):
     train_losses = list(json_data['loss']['TRAIN'].values())
@@ -160,17 +177,19 @@ def main():
     is_inverse = True if 'Inverse' in training_params['dataset_type'] else False
     with open(os.path.join(args.experiment_dirpath, 'losses.json'), 'r') as f:
         json_data = json.load(f)
-    draw_losses(json_data, outpath=os.path.join(
-        plots_path, 'losses.pdf'))
-    draw_r2_scores(args.experiment_dirpath,
-                   outpath=os.path.join(plots_path, 'r2_scores.pdf'))
-    draw_pull(args.experiment_dirpath,
-              outpath=os.path.join(plots_path, 'pulls.pdf'))
+    # draw_losses(json_data, outpath=os.path.join(
+    #     plots_path, 'losses.pdf'))
+    # draw_r2_scores(args.experiment_dirpath,
+    #                outpath=os.path.join(plots_path, 'r2_scores.pdf'))
+    # draw_pull(args.experiment_dirpath,
+    #           outpath=os.path.join(plots_path, 'pulls.pdf'))
     test_data = np.load(os.path.join(args.experiment_dirpath, 'test',
                                      'labels_and_preds.npz'), allow_pickle=True)['data'][()]
-    for cut in pt_intervals:
-        draw_effectivness_curve(test_data, pt_intervals, cut=cut, outpath=os.path.join(
-            plots_path, f'effectivness_curve_cut_{cut}.pdf'), is_inverse=is_inverse)
+    test_npz = np.load('../../../npz_original/orig-dataset.npz', allow_pickle=True)['TEST'][()]
+
+    for cut in range(len(pt_intervals)):
+        draw_effectivness_curve(test_npz, test_data, pt_intervals, pt_code_cut=cut, outpath=os.path.join(
+            plots_path, f'effectivness_curve_cut_{pt_intervals[cut]}.pdf'), figsize=(10,10), mask_type='full')
 
 
 if __name__ == '__main__':

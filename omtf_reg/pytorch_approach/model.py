@@ -12,7 +12,6 @@ from sklearn.metrics import r2_score
 from omtf_reg.pytorch_approach.net import omtfNet
 
 
-
 class omtfModel:
     def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(),
                  experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10, net=None):
@@ -135,7 +134,8 @@ class omtfModel:
 
     def get_net_size(self):
         assert self.net is not None, 'net attribute must be set earlier'
-        net_parameters = filter(lambda p: p.requires_grad, self.net.parameters())
+        net_parameters = filter(
+            lambda p: p.requires_grad, self.net.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
         return params
 

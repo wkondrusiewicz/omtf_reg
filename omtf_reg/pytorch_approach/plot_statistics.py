@@ -47,9 +47,6 @@ def get_pull(labels, preds):
     return np.mean((preds - labels) / labels)
 
 
-
-
-
 def draw_effectivness_curve(test_npz: dict, test_data: dict, pt_intervals: list, pt_code_cut: float, figsize: tuple = (16, 8), outpath=None):
     labels = test_data['labels']
     preds = test_data['predictions']
@@ -57,32 +54,35 @@ def draw_effectivness_curve(test_npz: dict, test_data: dict, pt_intervals: list,
     preds_omtf = test_npz['OMTF_PT']
     omtf_quality = test_npz['OMTF_QUALITY']
 
-    #nn data
-    pt_cut = pt_intervals[pt_code_cut-1]
+    # nn data
+    pt_cut = pt_intervals[pt_code_cut - 1]
     h2 = np.histogram(labels[preds > pt_cut], pt_intervals)[0]
     h1 = np.histogram(labels, pt_intervals)[0]
 
     mask = test_npz['PT_VAL'] < 100
-    mask_omtf_pt = preds_omtf>0
-    mask_omtf_quality = omtf_quality==12
+    mask_omtf_pt = preds_omtf > 0
+    mask_omtf_quality = omtf_quality == 12
     preds_omtf = preds_omtf[mask_omtf_quality & mask_omtf_pt]
     labels_omtf = labels_omtf[mask_omtf_quality & mask_omtf_pt]
 
+    h2_omtf = np.histogram(labels_omtf[preds_omtf > pt_code_cut], bins=range(
+        1, len(pt_intervals) + 1))[0]
+    h1_omtf = np.histogram(
+        labels_omtf, bins=range(1, len(pt_intervals) + 1))[0]
 
-    h2_omtf = np.histogram(labels_omtf[preds_omtf > pt_code_cut], bins=range(1, len(pt_intervals)+1))[0]
-    h1_omtf = np.histogram(labels_omtf, bins=range(1, len(pt_intervals) + 1))[0]
-
-    eff_reg = np.nan_to_num(h2/h1) if np.any(np.isnan(h2/h1)) else h2/h1
-    eff_omtf = np.nan_to_num(h2_omtf/h1_omtf) if np.any(np.isnan(h2_omtf/h1_omtf)) else h2_omtf/h1_omtf
-
+    eff_reg = np.nan_to_num(
+        h2 / h1) if np.any(np.isnan(h2 / h1)) else h2 / h1
+    eff_omtf = np.nan_to_num(
+        h2_omtf / h1_omtf) if np.any(np.isnan(h2_omtf / h1_omtf)) else h2_omtf / h1_omtf
 
     sns.set()
     plt.figure(figsize=figsize)
     plt.plot(eff_reg, 'bo-', label='reg')
     plt.plot(eff_omtf, 'yo-', label='omtf')
     plt.axvline(pt_code_cut - 1, color='r')
-    plt.xticks(range(h2.shape[0]), range(1, h2.shape[0] +1))
-    plt.title(f'Effectivness curve for $p_T \geq {pt_cut}$ GeV\nCut: code {pt_code_cut}, $p_T \in [{pt_cut}, {pt_intervals[pt_code_cut]}[$ GeV')
+    plt.xticks(range(h2.shape[0]), range(1, h2.shape[0] + 1))
+    plt.title(
+        f'Effectivness curve for $p_T \geq {pt_cut}$ GeV\nCut: code {pt_code_cut}, $p_T \in [{pt_cut}, {pt_intervals[pt_code_cut]}[$ GeV')
     plt.ylabel('Effectivness')
     plt.xlabel('Momentum code')
     plt.legend()
@@ -160,12 +160,18 @@ def main():
     is_inverse = True if 'Inverse' in training_params['dataset_type'] else False
     with open(os.path.join(args.experiment_dirpath, 'losses.json'), 'r') as f:
         json_data = json.load(f)
-    draw_losses(json_data, outpath=os.path.join(plots_path, 'losses.pdf'))
-    draw_r2_scores(args.experiment_dirpath, outpath=os.path.join(plots_path, 'r2_scores.pdf'))
-    draw_pull(args.experiment_dirpath, outpath=os.path.join(plots_path, 'pulls.pdf'))
-    test_data = np.load(os.path.join(args.experiment_dirpath, 'test', 'labels_and_preds.npz'), allow_pickle=True)['data'][()]
+    draw_losses(json_data, outpath=os.path.join(
+        plots_path, 'losses.pdf'))
+    draw_r2_scores(args.experiment_dirpath,
+                   outpath=os.path.join(plots_path, 'r2_scores.pdf'))
+    draw_pull(args.experiment_dirpath,
+              outpath=os.path.join(plots_path, 'pulls.pdf'))
+    test_data = np.load(os.path.join(args.experiment_dirpath, 'test',
+                                     'labels_and_preds.npz'), allow_pickle=True)['data'][()]
     for cut in pt_intervals:
-        draw_effectivness_curve(test_data, pt_intervals, cut=cut, outpath=os.path.join(plots_path, f'effectivness_curve_cut_{cut}.pdf'), is_inverse=is_inverse)
+        draw_effectivness_curve(test_data, pt_intervals, cut=cut, outpath=os.path.join(
+            plots_path, f'effectivness_curve_cut_{cut}.pdf'), is_inverse=is_inverse)
+
 
 if __name__ == '__main__':
     main()

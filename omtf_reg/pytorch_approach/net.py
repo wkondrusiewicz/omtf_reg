@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class omtfNetBigger(nn.Module):
     def __init__(self):
         super(omtfNetBigger, self).__init__()
@@ -10,7 +11,7 @@ class omtfNetBigger(nn.Module):
         self.conv2 = ConvBlock(64, 128, (3, 1), (1, 0))
         self.conv3 = ConvBlock(128, 256, (1, 2), (0, 0))
         self.conv4 = ConvBlock(256, 512, (3, 1), (1, 0))
-        self.conv5 = ConvBlock(512, 1024, (3, 1),(1, 0))
+        self.conv5 = ConvBlock(512, 1024, (3, 1), (1, 0))
         self.conv6 = ConvBlock(1024, 2048, (1, 1))
 
         self.dense1 = DenseBlock(2048, 4096)
@@ -43,7 +44,7 @@ class omtfNetBig(nn.Module):
         self.conv1 = ConvBlock(1, 64, (3, 1), (1, 0))
         self.conv2 = ConvBlock(64, 128, (3, 1), (1, 0))
         self.conv3 = ConvBlock(128, 256, (3, 2), (1, 0))
-        self.conv4 = ConvBlock(256, 512, (3, 1),(1, 0))
+        self.conv4 = ConvBlock(256, 512, (3, 1), (1, 0))
         self.conv5 = ConvBlock(512, 1024, (1, 1))
 
         self.dense1 = DenseBlock(1024, 4096)
@@ -74,7 +75,7 @@ class omtfNet(nn.Module):
 
         self.conv1 = ConvBlock(1, 32, (5, 2), (2, 0))
         self.conv2 = ConvBlock(32, 64, (3, 1), (1, 0))
-        self.conv3 = ConvBlock(64, 128, (3, 1),(1, 0))
+        self.conv3 = ConvBlock(64, 128, (3, 1), (1, 0))
         self.conv4 = ConvBlock(128, 256, (1, 1))
 
         self.dense1 = DenseBlock(256, 4096)
@@ -107,7 +108,8 @@ class ConvBlock(nn.Module):
                                             out_channels=out_channels,
                                             kernel_size=kernel_size,
                                             padding=padding),
-                                  nn.BatchNorm2d(num_features=out_channels),
+                                  nn.BatchNorm2d(
+                                      num_features=out_channels),
                                   nn.ELU())
 
     def forward(self, x):
@@ -123,11 +125,12 @@ class DenseBlock(nn.Module):
             self.dense = nn.Linear(in_features=in_features,
                                    out_features=out_features)
         else:
-            self.dense =  nn.Sequential(nn.Linear(in_features=in_features,
-                                                  out_features=out_features),
-                                        nn.BatchNorm1d(num_features=out_features),
-                                        nn.ELU(),
-                                        nn.Dropout())
+            self.dense = nn.Sequential(nn.Linear(in_features=in_features,
+                                                 out_features=out_features),
+                                       nn.BatchNorm1d(
+                num_features=out_features),
+                nn.ELU(),
+                nn.Dropout())
 
     def forward(self, x):
         x = self.dense(x)

@@ -24,7 +24,7 @@ class omtfDataset(Dataset):
         output = output[output < self.threshold]
         input = torch.from_numpy(input).float().view(-1, 1, 18, 2)
         self.input = input
-        self.output = torch.from_numpy(output).float().view(-1,1)
+        self.output = torch.from_numpy(output).float().view(-1, 1)
 
     def __len__(self):
         return len(self.output)
@@ -56,11 +56,11 @@ class omtfDatasetInverse(Dataset):
         inverse_mask = (output > 1) & (output < self.threshold)
         output = output[inverse_mask]
         input = input[inverse_mask]
-        output = 1/output #take the inverse of transverse momentum
+        output = 1 / output  # take the inverse of transverse momentum
 
         input = torch.from_numpy(input).float().view(-1, 1, 18, 2)
         self.input = input
-        self.output = torch.from_numpy(output).float().view(-1,1)
+        self.output = torch.from_numpy(output).float().view(-1, 1)
 
     def __len__(self):
         return len(self.output)
@@ -93,14 +93,15 @@ class omtfDatasetMasked(Dataset):
         input = input[output < self.threshold]
         output = output[output < self.threshold]
 
-        mask = np.load(kw['mask_path'], allow_pickle=True)[self.mode][()]
+        mask = np.load(kw['mask_path'], allow_pickle=True)[
+            self.mode][()]
 
         output = output[mask]
         input = input[mask]
 
         input = torch.from_numpy(input).float().view(-1, 1, 18, 2)
         self.input = input
-        self.output = torch.from_numpy(output).float().view(-1,1)
+        self.output = torch.from_numpy(output).float().view(-1, 1)
 
     def __len__(self):
         return len(self.output)

@@ -36,7 +36,6 @@ class omtfNetBigger(nn.Module):
         return x
 
 
-
 class omtfNetBig(nn.Module):
     def __init__(self):
         super(omtfNetBig, self).__init__()
@@ -67,6 +66,7 @@ class omtfNetBig(nn.Module):
         x = self.dense2(x)
         x = self.dense3(x)
         return x
+
 
 class omtfNet(nn.Module):
     def __init__(self):
@@ -100,10 +100,15 @@ class omtfNet(nn.Module):
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: tuple, padding: tuple = (0, 0)):
+    def __init__(self, in_channels: int, out_channels: int,
+                 kernel_size: tuple, padding: tuple = (0, 0)):
         super(ConvBlock, self).__init__()
-        self.conv = nn.Sequential(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
-                                            padding=padding), nn.BatchNorm2d(num_features=out_channels), nn.ELU())
+        self.conv = nn.Sequential(nn.Conv2d(in_channels=in_channels,
+                                            out_channels=out_channels,
+                                            kernel_size=kernel_size,
+                                            padding=padding),
+                                  nn.BatchNorm2d(num_features=out_channels),
+                                  nn.ELU())
 
     def forward(self, x):
         x = self.conv(x)
@@ -111,10 +116,18 @@ class ConvBlock(nn.Module):
 
 
 class DenseBlock(nn.Module):
-    def __init__(self, in_features: int, out_features: int, is_last_layer: bool = False):
+    def __init__(self, in_features: int, out_features: int,
+                 is_last_layer: bool = False):
         super(DenseBlock, self).__init__()
-        self.dense = nn.Linear(in_features=in_features, out_features=out_features) if is_last_layer else nn.Sequential(nn.Linear(
-            in_features=in_features, out_features=out_features), nn.BatchNorm1d(num_features=out_features), nn.ELU(), nn.Dropout())
+        if is_last_layer:
+            self.dense = nn.Linear(in_features=in_features,
+                                   out_features=out_features)
+        else:
+            self.dense =  nn.Sequential(nn.Linear(in_features=in_features,
+                                                  out_features=out_features),
+                                        nn.BatchNorm1d(num_features=out_features),
+                                        nn.ELU(),
+                                        nn.Dropout())
 
     def forward(self, x):
         x = self.dense(x)

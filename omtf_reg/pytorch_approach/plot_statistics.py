@@ -47,21 +47,44 @@ def get_pull(labels, preds):
     return np.mean((preds - labels) / labels)
 
 
-def draw_effectivness_curve(test_data: dict, pt_intervals: list, cut: float, figsize: tuple = (8, 4), outpath=None, is_inverse=False):
+
+
+
+def draw_effectivness_curve(test_npz: dict, test_data: dict, pt_intervals: list, pt_code_cut: float, figsize: tuple = (16, 8), outpath=None):
     labels = test_data['labels']
     preds = test_data['predictions']
+    labels_omtf = test_npz['PT_CODE']
+    preds_omtf = test_npz['OMTF_PT']
+    omtf_quality = test_npz['OMTF_QUALITY']
 
-    if is_inverse:
-        labels = 1/labels
-        preds = 1/preds
-
-    h2 = np.histogram(labels[preds > cut], pt_intervals)[0]
+    #nn data
+    pt_cut = pt_intervals[pt_code_cut-1]
+    h2 = np.histogram(labels[preds > pt_cut], pt_intervals)[0]
     h1 = np.histogram(labels, pt_intervals)[0]
+
+    mask = test_npz['PT_VAL'] < 100
+    mask_omtf_pt = preds_omtf>0
+    mask_omtf_quality = omtf_quality==12
+    preds_omtf = preds_omtf[mask_omtf_quality & mask_omtf_pt]
+    labels_omtf = labels_omtf[mask_omtf_quality & mask_omtf_pt]
+
+
+    h2_omtf = np.histogram(labels_omtf[preds_omtf > pt_code_cut], bins=range(1, len(pt_intervals)+1))[0]
+    h1_omtf = np.histogram(labels_omtf, bins=range(1, len(pt_intervals) + 1))[0]
+
+    eff_reg = np.nan_to_num(h2/h1) if np.any(np.isnan(h2/h1)) else h2/h1
+    eff_omtf = np.nan_to_num(h2_omtf/h1_omtf) if np.any(np.isnan(h2_omtf/h1_omtf)) else h2_omtf/h1_omtf
+
+
+    sns.set()
     plt.figure(figsize=figsize)
-    plt.plot(h2 / h1)
-    plt.title(f'Effectivness curve for test data')
-#     plt.xlabel('Epochs')
+    plt.plot(eff_reg, 'bo-', label='reg')
+    plt.plot(eff_omtf, 'yo-', label='omtf')
+    plt.axvline(pt_code_cut - 1, color='r')
+    plt.xticks(range(h2.shape[0]), range(1, h2.shape[0] +1))
+    plt.title(f'Effectivness curve for $p_T \geq {pt_cut}$ GeV\nCut: code {pt_code_cut}, $p_T \in [{pt_cut}, {pt_intervals[pt_code_cut]}[$ GeV')
     plt.ylabel('Effectivness')
+    plt.xlabel('Momentum code')
     plt.legend()
     plt.tight_layout()
     if outpath is not None:
@@ -73,11 +96,11 @@ def draw_effectivness_curve(test_data: dict, pt_intervals: list, cut: float, fig
 
 def draw_losses(json_data: dict, figsize: tuple = (8, 4), outpath=None):
     train_losses = list(json_data['loss']['TRAIN'].values())
-    valid_losses = list(json_data['loss']['VALID'].values())
+    # valid_losses = list(json_data['loss']['VALID'].values())
     plt.figure(figsize=figsize)
     epochs = len(train_losses)
     plt.plot(range(epochs), train_losses, label='TRAIN', color='b')
-    plt.plot(range(epochs), valid_losses, label='VALID', color='y')
+    # plt.plot(range(epochs), valid_losses, label='VALID', color='y')
     plt.title(f'Loss for training for {epochs} epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
@@ -96,7 +119,7 @@ def draw_r2_scores(experiment_dirpath: str, figsize: tuple = (8, 4), outpath=Non
     plt.figure(figsize=figsize)
     epochs = len(r2_train)
     plt.plot(range(epochs), r2_train, label='TRAIN', color='b')
-    plt.plot(range(epochs), r2_valid, label='VALID', color='y')
+    # plt.plot(range(epochs), r2_valid, label='VALID', color='y')
     plt.title(f'$r^2$ score for training for {epochs} epochs')
     plt.xlabel('Epochs')
     plt.ylabel('r2_score')
@@ -115,7 +138,7 @@ def draw_pull(experiment_dirpath: str, figsize: tuple = (8, 4), outpath=None):
     plt.figure(figsize=figsize)
     epochs = len(pull_train)
     plt.plot(range(epochs), pull_train, label='TRAIN', color='b')
-    plt.plot(range(epochs), pull_valid, label='VALID', color='y')
+    # plt.plot(range(epochs), pull_valid, label='VALID', color='y')
     plt.title(f'Pull for training for {epochs} epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Pull')

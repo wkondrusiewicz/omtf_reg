@@ -31,7 +31,6 @@ def parse_args():
         '--dataset_type', choices=['omtfDataset', 'omtfDatasetInverse', 'omtfDatasetMasked'], default='omtfDataset')
     parser.add_argument('--mask_path', default=None)
 
-
     args = parser.parse_args()
     return args
 
@@ -47,9 +46,12 @@ def get_dataset_architecture(name):
 def main():
     args = parse_args()
     kw = {'mask_path': args.mask_path} if args.mask_path is not None else {}
-    dataloaders = {'TRAIN': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='TRAIN', **kw), batch_size=args.train_batch_size, shuffle=True),
-                   'VALID': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='VALID', **kw), batch_size=args.test_batch_size),
-                   'TEST': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='TEST', **kw), batch_size=args.test_batch_size)}
+    dataloaders = {'TRAIN': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='TRAIN', **kw),
+                                                                batch_size=args.train_batch_size, shuffle=True),
+                   'VALID': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='VALID', **kw),
+                                                                batch_size=args.test_batch_size),
+                   'TEST': DataLoader(get_dataset_architecture(args.dataset_type)(data_path=args.data_path, mode='TEST', **kw),
+                                                               batch_size=args.test_batch_size)}
 
     net = get_net_architecture(args.net)()
     model = omtfModel(dataloaders=dataloaders,

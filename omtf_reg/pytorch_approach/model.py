@@ -10,7 +10,7 @@ import torch.nn as nn
 from sklearn.metrics import r2_score
 
 from omtf_reg.pytorch_approach.net import omtfNet
-
+from omtf_reg.pytorch_approach.plot_statistics import omtfPlotter
 
 class omtfModel:
     def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(),
@@ -28,8 +28,9 @@ class omtfModel:
 
         self.net = omtfNet() if self.net is None else self.net
         self.net.cuda()
-        optimizer = torch.optim.Adam(self.net.parameters(), lr=init_lr)
-
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=init_lr, weight_decay=0.1)
+        decay_rate = 0.96
+        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
         things_to_save = {'loss': {'TRAIN': {}, 'VALID': {}}}
 
         preds_save_path = os.path.join(
@@ -79,10 +80,10 @@ class omtfModel:
 
                 phase_loss /= len(self.dataloaders[phase])
                 print(
-                    f'{phase} LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}')
+                    f'{phase} LOSS {phase_loss}, {self.get_statistics(gathered_labels, gathered_preds)}')
 
                 things_to_save['loss'][phase][epoch] = phase_loss
-
+            lr_scheduler.step()
             if epoch % self.snapshot_frequency == 0:
                 self.save_model()
                 print('Snapshot successfully created!')
@@ -141,4 +142,6 @@ class omtfModel:
 
     def get_statistics(self, gathered_labels, gathered_preds):
         r2 = r2_score(gathered_labels, gathered_preds)
-        return r2
+        pull = omtfPlotter.get_pull(gathered_labels, gathered_preds)
+        results = f'r2: {r2}, pull: {pull}'
+        return results

@@ -15,9 +15,9 @@ from omtf_reg.pytorch_approach.constants import pt_intervals
 
 class omtfPlotter:
 
-    def __init__(self, experiment_dirpath: str, original_data_dirpath: str):
+    def __init__(self, experiment_dirpath: str, original_data_path: str):
         self.experiment_dirpath = experiment_dirpath
-        self.original_data_dirpath = original_data_dirpath
+        self.original_data_path = original_data_path
         self._extract_predictions_labels_and_test_data()
 
     def _extract_predictions_labels_and_test_data(self):
@@ -42,8 +42,7 @@ class omtfPlotter:
 
         test_data = np.load(os.path.join(self.experiment_dirpath, 'test',
                                          'labels_and_preds.npz'), allow_pickle=True)['data'][()]
-        test_npz = np.load(os.path.join(
-            self.original_data_dirpath, 'orig-dataset.npz'), allow_pickle=True)['TEST'][()]
+        test_npz = np.load(self.original_data_path, allow_pickle=True)['TEST'][()]
 
         with open(os.path.join(self.experiment_dirpath, 'losses.json'), 'r') as f:
             losses_dict = json.load(f)
@@ -176,7 +175,7 @@ def parse_args():
         description='Plotting tool for omtf_reg')
     parser.add_argument('--experiment_dirpath',
                         help='Location of predictions', required=True, type=str)
-    parser.add_argument('--original_data_dirpath',
+    parser.add_argument('--original_data_path',
                         help='Location of original data ', required=True, type=str)
     args = parser.parse_args()
     return args
@@ -189,7 +188,7 @@ def main():
     with open(os.path.join(args.experiment_dirpath, 'training_params.json'), 'r') as f:
         training_params = json.load(f)
     is_inverse = True if 'Inverse' in training_params['dataset_type'] else False
-    plotter = omtfPlotter(args.experiment_dirpath, args.original_data_dirpath)
+    plotter = omtfPlotter(args.experiment_dirpath, args.original_data_path)
     plotter.draw_losses(outpath=os.path.join(plots_path, 'losses.pdf'))
     plotter.draw_pull(outpath=os.path.join(plots_path, 'pulls.pdf'))
     plotter.draw_r2_scores(outpath=os.path.join(plots_path, 'r2_scores.pdf'))

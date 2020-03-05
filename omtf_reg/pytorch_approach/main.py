@@ -33,6 +33,8 @@ def parse_args():
     parser.add_argument(
         '--dataset_type', choices=['omtfDataset', 'omtfDatasetInverse', 'omtfDatasetMasked'], default='omtfDataset')
     parser.add_argument('--mask_path', default=None)
+    parser.add_argument('lrd', '--lr_decay_rate', default=0.96)
+    parser.add_argument('-wd', '--weight_decay', default=0.1)
 
     args = parser.parse_args()
     return args
@@ -65,8 +67,13 @@ def main():
     model.train(epochs=args.epochs, init_lr=args.init_lr)
     model.predict()
 
-    training_params = {'epochs': args.epochs, 'init_lr': args.init_lr, 'train_batch_size': args.train_batch_size,
-                       'test_batch_size': args.test_batch_size, 'data_path': os.path.abspath(args.data_path), 'dataset_type': args.dataset_type}
+    training_params = {'epochs': args.epochs,
+                       'init_lr': args.init_lr,
+                       'train_batch_size': args.train_batch_size,
+                       'test_batch_size': args.test_batch_size,
+                       'data_path': os.path.abspath(args.data_path), 'dataset_type': args.dataset_type,
+                       'weight_decay': args.weight_decay,
+                       'lr_decay_rate': args.lr_decay_rate}
 
     with open(os.path.join(args.experiment_dirpath, 'training_params.json'), 'w') as f:
         json.dump(training_params, f)

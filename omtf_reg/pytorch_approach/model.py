@@ -22,7 +22,7 @@ class omtfModel:
         self.snapshot_frequency = snapshot_frequency
         self.net = net
 
-    def train(self, init_lr=1e-3, epochs=20):
+    def train(self, init_lr=1e-3, epochs=20, lr_decay_rate=0.96, weight_decay=0.1):
         assert 'TRAIN' in self.dataloaders.keys(), 'Missing train dataloader'
         assert 'VALID' in self.dataloaders.keys(), 'Missing validation dataloader'
 

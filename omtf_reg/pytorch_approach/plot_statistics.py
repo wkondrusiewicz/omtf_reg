@@ -16,6 +16,7 @@ from omtf_reg.pytorch_approach.constants import pt_intervals
 class omtfPlotter:
 
     def __init__(self, experiment_dirpath: str, original_data_path: str):
+        sns.set()
         self.experiment_dirpath = experiment_dirpath
         self.original_data_path = original_data_path
         self._extract_predictions_labels_and_test_data()
@@ -33,12 +34,13 @@ class omtfPlotter:
         train_stats = []
         valid_stats = []
         for i, (label_path, pred_path) in tqdm(enumerate(zip(label_paths, prediction_paths)), desc='Extracting data from npz files'):
-            labels = np.load(label_path)['data']
-            preds = np.load(pred_path)['data']
-            if 'TRAIN' in label_path:
-                train_stats.append((labels, preds))
-            else:
-                valid_stats.append((labels, preds))
+            if i < 300:
+                labels = np.load(label_path)['data']
+                preds = np.load(pred_path)['data']
+                if 'TRAIN' in label_path:
+                    train_stats.append((labels, preds))
+                else:
+                    valid_stats.append((labels, preds))
 
         test_data = np.load(os.path.join(self.experiment_dirpath, 'test',
                                          'labels_and_preds.npz'), allow_pickle=True)['data'][()]
@@ -151,7 +153,6 @@ class omtfPlotter:
         eff_omtf = np.nan_to_num(
             h2_omtf / h1_omtf) if np.any(np.isnan(h2_omtf / h1_omtf)) else h2_omtf / h1_omtf
 
-        sns.set()
         plt.figure(figsize=figsize)
         plt.plot(eff_reg, 'bo-', label='reg')
         plt.plot(eff_omtf, 'yo-', label='omtf')

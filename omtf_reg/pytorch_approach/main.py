@@ -23,8 +23,11 @@ def parse_args():
                         help="Test batch size", type=int, default=32)
     parser.add_argument('--experiment_dirpath',
                         help='Where to save the model', required=True, type=str)
+    parser.add_argument('--pretrained_model_path', help='Path to pretrained model',
+                        type=str, default=None)
     parser.add_argument(
         '--data_path', help='Path to data', required=True, type=str)
+
     parser.add_argument(
         '--net', choices=['omtfNet', 'omtfNetBig', 'omtfNetBigger'], default='omtfNet')
     parser.add_argument(
@@ -56,6 +59,9 @@ def main():
     net = get_net_architecture(args.net)()
     model = omtfModel(dataloaders=dataloaders,
                       experiment_dirpath=args.experiment_dirpath, net=net)
+    if args.pretrained_model_path is not None:
+        model.load_model(args.pretrained_model_path)
+
     model.train(epochs=args.epochs, init_lr=args.init_lr)
     model.predict()
 

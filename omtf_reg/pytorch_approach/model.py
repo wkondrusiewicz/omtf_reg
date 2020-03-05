@@ -128,8 +128,8 @@ class omtfModel:
         torch.save(self.net, os.path.join(
             self.experiment_dirpath, 'model.pth'))
 
-    def load_model(self, model_dirpath):
-        net = torch.load(model_dirpath)
+    def load_model(self, model_path):
+        net = torch.load(model_path)
         self.net = net
         print('Model loaded successfully!')
 

@@ -33,7 +33,7 @@ def parse_args():
     parser.add_argument(
         '--dataset_type', choices=['omtfDataset', 'omtfDatasetInverse', 'omtfDatasetMasked'], default='omtfDataset')
     parser.add_argument('--mask_path', default=None)
-    parser.add_argument('lrd', '--lr_decay_rate', default=0.96)
+    parser.add_argument('-lrd', '--lr_decay_rate', default=0.96)
     parser.add_argument('-wd', '--weight_decay', default=0.1)
 
     args = parser.parse_args()

@@ -12,25 +12,26 @@ from sklearn.metrics import r2_score
 from omtf_reg.pytorch_approach.net import omtfNet
 from omtf_reg.pytorch_approach.plot_statistics import omtfPlotter
 
+
 class omtfModel:
     def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(),
-                 experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10, net=None):
+                 experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10, net=None, init_lr=1e-3, weight_decay=0.1):
 
         self._loss_fn = loss_fn
         self.dataloaders = dataloaders
         self.experiment_dirpath = experiment_dirpath
         self.snapshot_frequency = snapshot_frequency
-        self.net = net
+        self.net = omtfNet() if net is None else net
+        self.net.cuda()
+        self.optimizer = torch.optim.Adam(
+            self.net.parameters(), lr=init_lr, weight_decay=weight_decay)
 
-    def train(self, init_lr=1e-3, epochs=20, lr_decay_rate=0.96, weight_decay=0.1):
+    def train(self, epochs=20, lr_decay_rate=0.96):
         assert 'TRAIN' in self.dataloaders.keys(), 'Missing train dataloader'
         assert 'VALID' in self.dataloaders.keys(), 'Missing validation dataloader'
 
-        self.net = omtfNet() if self.net is None else self.net
-        self.net.cuda()
-        optimizer = torch.optim.Adam(self.net.parameters(), lr=init_lr, weight_decay=0.1)
-        decay_rate = 0.96
-        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
+        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
+            optimizer=self.optimizer, gamma=lr_decay_rate)
         things_to_save = {'loss': {'TRAIN': {}, 'VALID': {}}}
 
         preds_save_path = os.path.join(
@@ -59,7 +60,7 @@ class omtfModel:
                     X = X.cuda()
                     y_gt = y_gt.cuda()
 
-                    optimizer.zero_grad()
+                    self.optimizer.zero_grad()
                     with torch.set_grad_enabled(phase == 'TRAIN'):
                         y_pred = self.net(X)
                         loss = self._loss_fn(y_pred, y_gt)
@@ -71,7 +72,7 @@ class omtfModel:
 
                         if phase == 'TRAIN':
                             loss.backward()
-                            optimizer.step()
+                            self.optimizer.step()
 
                 np.savez_compressed(os.path.join(preds_save_path,
                                                  f'{phase}_{epoch}.npz'), data=gathered_preds)
@@ -85,7 +86,7 @@ class omtfModel:
                 things_to_save['loss'][phase][epoch] = phase_loss
             lr_scheduler.step()
             if epoch % self.snapshot_frequency == 0:
-                self.save_model()
+                self.save_model(epoch)
                 print('Snapshot successfully created!')
 
             t2 = time.time()
@@ -94,7 +95,7 @@ class omtfModel:
         with open(os.path.join(self.experiment_dirpath, 'losses.json'), 'w') as f:
             json.dump(things_to_save, f)
 
-        self.save_model()
+        self.save_model(epoch)
 
     def predict(self):
         assert 'TEST' in self.dataloaders.keys(), 'Missing test dataloader'
@@ -123,14 +124,18 @@ class omtfModel:
         print(
             f'\nTEST LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}')
 
-    def save_model(self):
+    def save_model(self, epoch):
         os.makedirs(self.experiment_dirpath, exist_ok=True)
-        torch.save(self.net, os.path.join(
+        checkpoint = {'epoch': epoch,
+                      'state_dict': self.net.state_dict(),
+                      'optimizer': self.optimizer.state_dict()}
+        torch.save(checkpoint, os.path.join(
             self.experiment_dirpath, 'model.pth'))
 
     def load_model(self, model_path):
-        net = torch.load(model_path)
-        self.net = net
+        checkpoint = torch.load(model_path)
+        self.net.load_state_dict(checkpoint['state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
         print('Model loaded successfully!')
 
     def get_net_size(self):

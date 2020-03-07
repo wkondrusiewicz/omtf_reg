@@ -60,11 +60,11 @@ def main():
 
     net = get_net_architecture(args.net)()
     model = omtfModel(dataloaders=dataloaders,
-                      experiment_dirpath=args.experiment_dirpath, net=net)
+                      experiment_dirpath=args.experiment_dirpath, net=net, init_lr=args.init_lr)
     if args.pretrained_model_path is not None:
         model.load_model(args.pretrained_model_path)
 
-    model.train(epochs=args.epochs, init_lr=args.init_lr)
+    model.train(epochs=args.epochs)
     model.predict()
 
     training_params = {'epochs': args.epochs,

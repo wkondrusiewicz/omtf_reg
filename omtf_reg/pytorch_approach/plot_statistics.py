@@ -44,7 +44,8 @@ class omtfPlotter:
 
         test_data = np.load(os.path.join(self.experiment_dirpath, 'test',
                                          'labels_and_preds.npz'), allow_pickle=True)['data'][()]
-        test_npz = np.load(self.original_data_path, allow_pickle=True)['TEST'][()]
+        test_npz = np.load(self.original_data_path,
+                           allow_pickle=True)['TEST'][()]
 
         with open(os.path.join(self.experiment_dirpath, 'losses.json'), 'r') as f:
             losses_dict = json.load(f)
@@ -189,10 +190,12 @@ def main():
     with open(os.path.join(args.experiment_dirpath, 'training_params.json'), 'r') as f:
         training_params = json.load(f)
     is_inverse = True if 'Inverse' in training_params['dataset_type'] else False
-    plotter = omtfPlotter(args.experiment_dirpath, args.original_data_path)
+    plotter = omtfPlotter(args.experiment_dirpath,
+                          args.original_data_path)
     plotter.draw_losses(outpath=os.path.join(plots_path, 'losses.pdf'))
     plotter.draw_pull(outpath=os.path.join(plots_path, 'pulls.pdf'))
-    plotter.draw_r2_scores(outpath=os.path.join(plots_path, 'r2_scores.pdf'))
+    plotter.draw_r2_scores(
+        outpath=os.path.join(plots_path, 'r2_scores.pdf'))
 
     for cut in range(len(pt_intervals)):
         plotter.draw_effectivness_curve(pt_code_cut=cut, outpath=os.path.join(

@@ -15,7 +15,7 @@ from omtf_reg.pytorch_approach.plot_statistics import omtfPlotter
 
 class omtfModel:
     def __init__(self, dataloaders: Mapping[str, torch.utils.data.DataLoader], loss_fn=nn.SmoothL1Loss(),
-                 experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10, net=None, init_lr=1e-3, weight_decay=0.1):
+                 experiment_dirpath: str = '../omtfNet', snapshot_frequency: int = 10, net=None, init_lr=1e-3, weight_decay=0.0, lr_decay_rate=None):
 
         self._loss_fn = loss_fn
         self.dataloaders = dataloaders
@@ -25,13 +25,15 @@ class omtfModel:
         self.net.cuda()
         self.optimizer = torch.optim.Adam(
             self.net.parameters(), lr=init_lr, weight_decay=weight_decay)
+        self._lr_decay_rate = lr_decay_rate
+        if self._lr_decay_rate is not None:
+            self.lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
+                optimizer=self.optimizer, gamma=self._lr_decay_rate)
 
-    def train(self, epochs=20, lr_decay_rate=0.96):
+    def train(self, epochs=20):
         assert 'TRAIN' in self.dataloaders.keys(), 'Missing train dataloader'
         assert 'VALID' in self.dataloaders.keys(), 'Missing validation dataloader'
 
-        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
-            optimizer=self.optimizer, gamma=lr_decay_rate)
         things_to_save = {'loss': {'TRAIN': {}, 'VALID': {}}}
 
         preds_save_path = os.path.join(
@@ -84,7 +86,10 @@ class omtfModel:
                     f'{phase} LOSS {phase_loss}, {self.get_statistics(gathered_labels, gathered_preds)}')
 
                 things_to_save['loss'][phase][epoch] = phase_loss
-            lr_scheduler.step()
+
+            if self._lr_decay_rate is not None:
+                self.lr_scheduler.step()
+
             if epoch % self.snapshot_frequency == 0:
                 self.save_model(epoch)
                 print('Snapshot successfully created!')
@@ -128,7 +133,9 @@ class omtfModel:
         os.makedirs(self.experiment_dirpath, exist_ok=True)
         checkpoint = {'epoch': epoch,
                       'state_dict': self.net.state_dict(),
-                      'optimizer': self.optimizer.state_dict()}
+                      'optimizer': self.optimizer.state_dict(),
+                      'lr_scheduler': self.lr_scheduler.state_dict() if
+                      self._lr_decay_rate is not None else None}
         torch.save(checkpoint, os.path.join(
             self.experiment_dirpath, 'model.pth'))
 
@@ -136,6 +143,9 @@ class omtfModel:
         checkpoint = torch.load(model_path)
         self.net.load_state_dict(checkpoint['state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
+        if self._lr_decay_rate is not None and checkpoint['lr_scheduler'] is not None:
+            self.lr_scheduler.load_state_dict(
+                checkpoint['lr_scheduler'])
         print('Model loaded successfully!')
 
     def get_net_size(self):

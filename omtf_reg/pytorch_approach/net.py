@@ -78,9 +78,9 @@ class omtfNet(nn.Module):
         self.conv3 = ConvBlock(64, 128, (3, 1), (1, 0))
         self.conv4 = ConvBlock(128, 256, (1, 1))
 
-        self.dense1 = DenseBlock(256, 4096)
-        self.dense2 = DenseBlock(4096, 1024)
-        self.dense3 = DenseBlock(1024, 256)
+        self.dense1 = DenseBlock(256, 4096, 0.3)
+        self.dense2 = DenseBlock(4096, 1024, 0.2)
+        self.dense3 = DenseBlock(1024, 256, 0.1)
         self.dense4 = DenseBlock(256, 1, is_last_layer=True)
 
     def forward(self, x):
@@ -119,7 +119,7 @@ class ConvBlock(nn.Module):
 
 class DenseBlock(nn.Module):
     def __init__(self, in_features: int, out_features: int,
-                 is_last_layer: bool = False):
+                 dropout_probability: int = 0.5, is_last_layer: bool = False):
         super(DenseBlock, self).__init__()
         if is_last_layer:
             self.dense = nn.Linear(in_features=in_features,
@@ -130,7 +130,7 @@ class DenseBlock(nn.Module):
                                        nn.BatchNorm1d(
                 num_features=out_features),
                 nn.ELU(),
-                nn.Dropout())
+                nn.Dropout(p=dropout_probability))
 
     def forward(self, x):
         x = self.dense(x)

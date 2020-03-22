@@ -47,8 +47,8 @@ class omtfNetBig(nn.Module):
         self.conv4 = ConvBlock(256, 512, (3, 1), (1, 0))
         self.conv5 = ConvBlock(512, 1024, (1, 1))
 
-        self.dense1 = DenseBlock(1024, 4096)
-        self.dense2 = DenseBlock(4096, 256)
+        self.dense1 = DenseBlock(1024, 4096, 0.2)
+        self.dense2 = DenseBlock(4096, 256, 0.1)
         self.dense3 = DenseBlock(256, 1, is_last_layer=True)
 
     def forward(self, x):
@@ -78,9 +78,9 @@ class omtfNet(nn.Module):
         self.conv3 = ConvBlock(64, 128, (3, 1), (1, 0))
         self.conv4 = ConvBlock(128, 256, (1, 1))
 
-        self.dense1 = DenseBlock(256, 4096, 0.3)
-        self.dense2 = DenseBlock(4096, 1024, 0.2)
-        self.dense3 = DenseBlock(1024, 256, 0.1)
+        self.dense1 = DenseBlock(256, 4096, 0)
+        self.dense2 = DenseBlock(4096, 1024, 0)
+        self.dense3 = DenseBlock(1024, 256, 0)
         self.dense4 = DenseBlock(256, 1, is_last_layer=True)
 
     def forward(self, x):

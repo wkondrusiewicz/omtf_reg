@@ -108,8 +108,8 @@ class ConvBlock(nn.Module):
                                             out_channels=out_channels,
                                             kernel_size=kernel_size,
                                             padding=padding),
-                                  nn.BatchNorm2d(
-                                      num_features=out_channels),
+                                  # nn.BatchNorm2d(
+                                  #     num_features=out_channels),
                                   nn.ELU())
 
     def forward(self, x):
@@ -127,8 +127,8 @@ class DenseBlock(nn.Module):
         else:
             self.dense = nn.Sequential(nn.Linear(in_features=in_features,
                                                  out_features=out_features),
-                                       nn.BatchNorm1d(
-                num_features=out_features),
+                #                        nn.BatchNorm1d(
+                # num_features=out_features),
                 nn.ELU(),
                 nn.Dropout(p=dropout_probability))
 

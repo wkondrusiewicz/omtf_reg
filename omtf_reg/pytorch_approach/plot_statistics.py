@@ -34,14 +34,16 @@ class omtfPlotter:
 
         train_stats = []
         valid_stats = []
-        for i, (label_path, pred_path) in tqdm(enumerate(zip(label_paths, prediction_paths)), desc='Extracting data from npz files'):
-            if i < 2 * self.epoch_threshold:
-                labels = np.load(label_path)['data']
-                preds = np.load(pred_path)['data']
-                if 'TRAIN' in label_path:
-                    train_stats.append((labels, preds))
-                else:
-                    valid_stats.append((labels, preds))
+        #for avoiding gathering training data
+        if self.epoch_threshold > 0:
+            for i, (label_path, pred_path) in tqdm(enumerate(zip(label_paths, prediction_paths)), desc='Extracting data from npz files'):
+                if i < 2 * self.epoch_threshold:
+                    labels = np.load(label_path)['data']
+                    preds = np.load(pred_path)['data']
+                    if 'TRAIN' in label_path:
+                        train_stats.append((labels, preds))
+                    else:
+                        valid_stats.append((labels, preds))
 
         test_data = np.load(os.path.join(self.experiment_dirpath, 'test',
                                          'labels_and_preds.npz'), allow_pickle=True)['data'][()]
@@ -161,7 +163,7 @@ class omtfPlotter:
         plt.axvline(pt_code_cut - 1, color='r')
         plt.xticks(range(h2.shape[0]), range(1, h2.shape[0] + 1))
         plt.title(
-            f'Effectivness curve for $p_T \geq {pt_cut}$ GeV\nCut: code {pt_code_cut}, $p_T \in [{pt_cut}, {pt_intervals[pt_code_cut]}[$ GeV')
+            f'Effectivness curve for $p_T \geq {pt_cut}$ GeV\nCut: code {pt_code_cut}, $p_T \in [{pt_cut}, {pt_intervals[pt_code_cut]}[$ GeV\nEvents mask: {mask_type}')
         plt.ylabel('Effectivness')
         plt.xlabel('Momentum code')
         plt.legend()
@@ -180,6 +182,8 @@ def parse_args():
                         help='Location of predictions', required=True, type=str)
     parser.add_argument('--original_data_path',
                         help='Location of original data ', required=True, type=str)
+    parser.add_argument('-et', '--epoch_threshold',
+                        type=int, default=150)
     args = parser.parse_args()
     return args
 
@@ -192,15 +196,18 @@ def main():
         training_params = json.load(f)
     is_inverse = True if 'Inverse' in training_params['dataset_type'] else False
     plotter = omtfPlotter(args.experiment_dirpath,
-                          args.original_data_path)
+                          args.original_data_path, epoch_threshold=args.epoch_threshold)
     plotter.draw_losses(outpath=os.path.join(plots_path, 'losses.pdf'))
     plotter.draw_pull(outpath=os.path.join(plots_path, 'pulls.pdf'))
     plotter.draw_r2_scores(
         outpath=os.path.join(plots_path, 'r2_scores.pdf'))
 
+    eff_path = os.path.join(plots_path, 'effectivness_curves')
+    os.makedirs(eff_path, exist_ok=True)
     for cut in range(len(pt_intervals)):
-        plotter.draw_effectivness_curve(pt_code_cut=cut, outpath=os.path.join(
-            plots_path, f'effectivness_curve_cut_{pt_intervals[cut]}.pdf'), mask_type='full')
+        for mask_type in ['full', 'pt', 'quality_12', 'none']:
+            plotter.draw_effectivness_curve(pt_code_cut=cut, outpath=os.path.join(
+                eff_path, f'cut_{pt_intervals[cut]}_{mask_type}.pdf'), mask_type=mask_type)
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import json
 from torch.utils.data import DataLoader
 
 from omtf_reg.pytorch_approach.datasets import omtfDataset, omtfDatasetInverse, omtfDatasetMasked
-from omtf_reg.pytorch_approach.net import omtfNet, omtfNetBig, omtfNetBigger, omtfResNet, omtfResNetBig
+from omtf_reg.pytorch_approach.net import omtfNet, omtfNetBig, omtfNetBigger, omtfResNet, omtfResNetBig, omtfHalfResNet, omtfNetNotSoDense
 from omtf_reg.pytorch_approach.model import omtfModel
 
 
@@ -29,7 +29,7 @@ def parse_args():
         '--data_path', help='Path to data', required=True, type=str)
 
     parser.add_argument(
-        '--net', choices=['omtfNet', 'omtfNetBig', 'omtfNetBigger', 'omtfResNet', 'omtfResNetBig'], default='omtfNet')
+        '--net', choices=['omtfNet', 'omtfNetBig', 'omtfNetBigger', 'omtfResNet', 'omtfResNetBig', "omtfHalfResNet",'omtfNetNotSoDense'], default='omtfNet')
     parser.add_argument(
         '--dataset_type', choices=['omtfDataset', 'omtfDatasetInverse', 'omtfDatasetMasked'], default='omtfDataset')
     parser.add_argument('--mask_path', default=None)
@@ -43,7 +43,7 @@ def parse_args():
 
 
 def get_net_architecture(name):
-    return {'omtfNet': omtfNet, 'omtfNetBig': omtfNetBig, 'omtfNetBigger': omtfNetBigger, 'omtfResNet': omtfResNet, 'omtfResNetBig': omtfResNetBig}[name]
+    return {'omtfNet': omtfNet, 'omtfNetBig': omtfNetBig, 'omtfNetBigger': omtfNetBigger, 'omtfResNet': omtfResNet, 'omtfResNetBig': omtfResNetBig, "omtfHalfResNet": omtfHalfResNet, "omtfNetNotSoDense": omtfNetNotSoDense}[name]
 
 
 def get_dataset_architecture(name):

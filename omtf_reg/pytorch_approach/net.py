@@ -100,6 +100,9 @@ class omtfNet(nn.Module):
         return x
 
 
+
+
+
 class ConvBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int,
                  kernel_size: tuple, padding: tuple = (0, 0)):
@@ -255,7 +258,9 @@ class omtfResNetBig(nn.Module):
         self.res3 = ResNetBottleNeckBlock(128, 256, 2)
         self.res5 = ResNetBottleNeckBlock(512, 512, 2)
 
+
         self.dense1 = DenseBlock(1024, 256)
+
         self.dense3 = DenseBlock(256, 1, is_last_layer=True)
 
     def forward(self, x):
@@ -271,4 +276,63 @@ class omtfResNetBig(nn.Module):
         x = self.dense1(x)
         x = self.dense3(x)
 
+        return x
+
+
+class omtfHalfResNet(nn.Module):
+    def __init__(self):
+        super(omtfHalfResNet, self).__init__()
+        self.conv1 = Conv2dAuto(in_channels=1, out_channels=16, kernel_size=(3,3))
+        self.res1 = ResNetBasicBlock(16, 32)
+        self.res2 = ResNetBasicBlock(32, 64)
+        self.res3 = ResNetBottleNeckBlock(64, 128, 2)
+        self.conv2 = Conv2dAuto(in_channels=256, out_channels=512, kernel_size=(3,3))
+        self.conv3 = Conv2dAuto(in_channels=512, out_channels=1024, kernel_size=(3,1))
+
+        self.dense1 = DenseBlock(1024, 256, 0)
+        self.dense2 = DenseBlock(256, 1, is_last_layer=True)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.res1(x)
+        x = self.res2(x)
+        x = nn.MaxPool2d(kernel_size=(2, 1))(x)
+        x = self.res3(x)
+        x= self.conv2(x)
+        x= self.conv3(x)
+        x = nn.AdaptiveAvgPool2d((1,1))(x)
+        x = x.view(-1, torch.prod(torch.tensor(x.size()[1:])))
+
+        x = self.dense1(x)
+        x = self.dense2(x)
+        return x
+
+
+class omtfNetNotSoDense(nn.Module):
+    def __init__(self):
+        super(omtfNetNotSoDense, self).__init__()
+        self.conv1 = Conv2dAuto(in_channels=1, out_channels=32, kernel_size=(3,3))
+        self.conv2 = Conv2dAuto(in_channels=32, out_channels=64, kernel_size=(3,3))
+        self.conv3 = Conv2dAuto(in_channels=64, out_channels=128, kernel_size=(3,3))
+        self.conv4 = Conv2dAuto(in_channels=128, out_channels=256, kernel_size=(3,3))
+        self.conv5 = Conv2dAuto(in_channels=256, out_channels=512, kernel_size=(3,3))
+        self.conv6 = Conv2dAuto(in_channels=512, out_channels=1024, kernel_size=(3,1))
+
+        self.dense1 = DenseBlock(1024, 256, 0)
+        self.dense2 = DenseBlock(256, 1, is_last_layer=True)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = nn.MaxPool2d(kernel_size=(2, 1))(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
+        x = nn.AdaptiveAvgPool2d((9,1))(x)
+        x = self.conv6(x)
+        x = nn.AdaptiveAvgPool2d((1,1))(x)
+        x = x.view(-1, torch.prod(torch.tensor(x.size()[1:])))
+
+        x = self.dense1(x)
+        x = self.dense2(x)
         return x

@@ -156,7 +156,7 @@ class ResidualBlock(nn.Module):
         super().__init__()
         self.in_channels, self.out_channels = in_channels, out_channels
         self.blocks = nn.Identity()
-        self.activate = nn.ELU(inplace=True)
+        self.activate = nn.ELU()
         self.shortcut = nn.Identity()
 
     def forward(self, x):
@@ -282,6 +282,7 @@ class omtfResNetBig(nn.Module):
 class omtfHalfResNet(nn.Module):
     def __init__(self):
         super(omtfHalfResNet, self).__init__()
+        self.activate = nn.ELU()
         self.conv1 = Conv2dAuto(in_channels=1, out_channels=16, kernel_size=(3,3))
         self.res1 = ResNetBasicBlock(16, 32)
         self.res2 = ResNetBasicBlock(32, 64)
@@ -294,12 +295,15 @@ class omtfHalfResNet(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
+        x = self.activate(x)
         x = self.res1(x)
         x = self.res2(x)
         x = nn.MaxPool2d(kernel_size=(2, 1))(x)
         x = self.res3(x)
         x= self.conv2(x)
+        x = self.activate(x)
         x= self.conv3(x)
+        x = self.activate(x)
         x = nn.AdaptiveAvgPool2d((1,1))(x)
         x = x.view(-1, torch.prod(torch.tensor(x.size()[1:])))
 
@@ -311,6 +315,7 @@ class omtfHalfResNet(nn.Module):
 class omtfNetNotSoDense(nn.Module):
     def __init__(self):
         super(omtfNetNotSoDense, self).__init__()
+        self.activate = nn.ELU()
         self.conv1 = Conv2dAuto(in_channels=1, out_channels=32, kernel_size=(3,3))
         self.conv2 = Conv2dAuto(in_channels=32, out_channels=64, kernel_size=(3,3))
         self.conv3 = Conv2dAuto(in_channels=64, out_channels=128, kernel_size=(3,3))
@@ -323,13 +328,19 @@ class omtfNetNotSoDense(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
+        x = self.activate(x)
         x = self.conv2(x)
+        x = self.activate(x)
         x = self.conv3(x)
+        x = self.activate(x)
         x = nn.MaxPool2d(kernel_size=(2, 1))(x)
         x = self.conv4(x)
+        x = self.activate(x)
         x = self.conv5(x)
+        x = self.activate(x)
         x = nn.AdaptiveAvgPool2d((9,1))(x)
         x = self.conv6(x)
+        x = self.activate(x)
         x = nn.AdaptiveAvgPool2d((1,1))(x)
         x = x.view(-1, torch.prod(torch.tensor(x.size()[1:])))
 

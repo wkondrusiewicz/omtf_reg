@@ -34,7 +34,7 @@ class omtfPlotter:
 
         train_stats = []
         valid_stats = []
-        #for avoiding gathering training data
+        # for avoiding gathering training data
         if self.epoch_threshold > 0:
             for i, (label_path, pred_path) in tqdm(enumerate(zip(label_paths, prediction_paths)), desc='Extracting data from npz files'):
                 if i < 2 * self.epoch_threshold:

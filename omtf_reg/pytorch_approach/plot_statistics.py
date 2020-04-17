@@ -16,7 +16,6 @@ from omtf_reg.pytorch_approach.constants import pt_intervals
 class omtfPlotter:
 
     def __init__(self, experiment_dirpath: str, original_data_path: str, epoch_threshold: int = 150):
-        sns.set()
         self.experiment_dirpath = experiment_dirpath
         self.original_data_path = original_data_path
         self.epoch_threshold = epoch_threshold
@@ -34,14 +33,16 @@ class omtfPlotter:
 
         train_stats = []
         valid_stats = []
-        for i, (label_path, pred_path) in tqdm(enumerate(zip(label_paths, prediction_paths)), desc='Extracting data from npz files'):
-            if i < 2 * self.epoch_threshold:
-                labels = np.load(label_path)['data']
-                preds = np.load(pred_path)['data']
-                if 'TRAIN' in label_path:
-                    train_stats.append((labels, preds))
-                else:
-                    valid_stats.append((labels, preds))
+        # for avoiding gathering training data
+        if self.epoch_threshold > 0:
+            for i, (label_path, pred_path) in tqdm(enumerate(zip(label_paths, prediction_paths)), desc='Extracting data from npz files'):
+                if i < 2 * self.epoch_threshold:
+                    labels = np.load(label_path)['data']
+                    preds = np.load(pred_path)['data']
+                    if 'TRAIN' in label_path:
+                        train_stats.append((labels, preds))
+                    else:
+                        valid_stats.append((labels, preds))
 
         test_data = np.load(os.path.join(self.experiment_dirpath, 'test',
                                          'labels_and_preds.npz'), allow_pickle=True)['data'][()]
@@ -58,15 +59,19 @@ class omtfPlotter:
         self.losses_dict = losses_dict
 
     def plot_stats(self, train_data, valid_data, title: str = '', xlabel: str = 'epochs',
-                   ylabel: str = '', figsize: tuple = (8, 4), outpath=None):
+                   ylabel: str = '', figsize: tuple = (16, 8), fontsize=18, outpath=None):
         plt.figure(figsize=figsize)
         epochs = len(train_data)
         plt.plot(range(epochs), train_data, label='TRAIN', color='b')
-        plt.plot(range(epochs), valid_data, label='VALID', color='y')
-        plt.title(title)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.legend()
+        coral_color = (1, 127 / 255, 80 / 255)
+        plt.plot(range(epochs), valid_data,
+                 label='VALID', color=coral_color)
+        plt.title(title, fontsize=fontsize + 8)
+        plt.xlabel(xlabel, fontsize=fontsize + 4)
+        plt.ylabel(ylabel, fontsize=fontsize + 4)
+        plt.xticks(fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
+        plt.legend(fontsize=fontsize + 4)
         plt.tight_layout()
         if outpath is not None:
             plt.savefig(outpath)
@@ -78,17 +83,18 @@ class omtfPlotter:
     def get_pull(labels, preds):
         return np.mean((preds - labels) / labels)
 
-    def draw_pull(self, figsize: tuple = (8, 4), outpath=None):
+    def draw_pull(self,  figsize: tuple = (16, 8), fontsize=18, outpath=None):
         pull_train = [self.get_pull(*s) for s in self.train_stats]
         pull_valid = [self.get_pull(*s) for s in self.valid_stats]
         kw = {'figsize': figsize,
               'title': f'Pull for training for {len(pull_train)} epochs',
               'xlabel': 'Epochs',
+              'fontsize': fontsize,
               'ylabel': 'Pull',
               'outpath': outpath}
         self.plot_stats(pull_train, pull_valid, **kw)
 
-    def draw_losses(self, figsize: tuple = (8, 4), outpath=None):
+    def draw_losses(self, figsize: tuple = (16, 8), fontsize=18, outpath=None):
         train_losses = list(self.losses_dict['loss']['TRAIN'].values())
         valid_losses = list(self.losses_dict['loss']['VALID'].values())
 
@@ -96,10 +102,11 @@ class omtfPlotter:
               'title': f'Loss for training for {len(train_losses)} epochs',
               'xlabel': 'Epochs',
               'ylabel': 'Loss function',
+              'fontsize': fontsize,
               'outpath': outpath}
         self.plot_stats(train_losses, valid_losses, **kw)
 
-    def draw_r2_scores(self, figsize: tuple = (8, 4), outpath=None):
+    def draw_r2_scores(self, figsize: tuple = (16, 8), fontsize=18, outpath=None):
         r2_train = [r2_score(*s) for s in self.train_stats]
         r2_valid = [r2_score(*s) for s in self.valid_stats]
 
@@ -107,10 +114,11 @@ class omtfPlotter:
               'title': f'$r^2$ score for training for {len(r2_train)} epochs',
               'xlabel': 'Epochs',
               'ylabel': '$r^2$ score',
+              'fontsize': fontsize,
               'outpath': outpath}
         self.plot_stats(r2_train, r2_valid, **kw)
 
-    def draw_effectivness_curve(self, pt_code_cut: float, pt_intervals: list = pt_intervals, figsize: tuple = (16, 8), outpath=None, mask_type='none'):
+    def draw_efficiency_curve(self, pt_code_cut: float, pt_intervals: list = pt_intervals, figsize: tuple = (16, 8), fontsize=18, outpath=None, mask_type='none'):
         labels = self.test_data['labels']
         preds = self.test_data['predictions']
         labels_omtf = self.test_npz['PT_CODE']
@@ -157,14 +165,16 @@ class omtfPlotter:
 
         plt.figure(figsize=figsize)
         plt.plot(eff_reg, 'bo-', label='reg')
-        plt.plot(eff_omtf, 'yo-', label='omtf')
+        coral_color = (1, 127 / 255, 80 / 255)
+        plt.plot(eff_omtf, 'o-', label='omtf', color=coral_color)
         plt.axvline(pt_code_cut - 1, color='r')
-        plt.xticks(range(h2.shape[0]), range(1, h2.shape[0] + 1))
+        plt.xticks(range(h2.shape[0]), range(1, h2.shape[0] + 1), fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
         plt.title(
-            f'Effectivness curve for $p_T \geq {pt_cut}$ GeV\nCut: code {pt_code_cut}, $p_T \in [{pt_cut}, {pt_intervals[pt_code_cut]}[$ GeV')
-        plt.ylabel('Effectivness')
-        plt.xlabel('Momentum code')
-        plt.legend()
+            f'Efficiency curve for $p_T \geq {pt_cut}$ GeV\nCut: code {pt_code_cut}, $p_T \in [{pt_cut}, {pt_intervals[pt_code_cut]}[$ GeV\nEvents mask: {mask_type}', fontsize=fontsize +8)
+        plt.ylabel('Efficiency', fontsize=fontsize +4)
+        plt.xlabel('Momentum code', fontsize=fontsize +4)
+        plt.legend(fontsize=fontsize +4)
         plt.tight_layout()
         if outpath is not None:
             plt.savefig(outpath)
@@ -180,6 +190,8 @@ def parse_args():
                         help='Location of predictions', required=True, type=str)
     parser.add_argument('--original_data_path',
                         help='Location of original data ', required=True, type=str)
+    parser.add_argument('-et', '--epoch_threshold',
+                        type=int, default=150)
     args = parser.parse_args()
     return args
 
@@ -192,15 +204,18 @@ def main():
         training_params = json.load(f)
     is_inverse = True if 'Inverse' in training_params['dataset_type'] else False
     plotter = omtfPlotter(args.experiment_dirpath,
-                          args.original_data_path)
+                          args.original_data_path, epoch_threshold=args.epoch_threshold)
     plotter.draw_losses(outpath=os.path.join(plots_path, 'losses.pdf'))
     plotter.draw_pull(outpath=os.path.join(plots_path, 'pulls.pdf'))
     plotter.draw_r2_scores(
         outpath=os.path.join(plots_path, 'r2_scores.pdf'))
 
+    eff_path = os.path.join(plots_path, 'effectivness_curves')
+    os.makedirs(eff_path, exist_ok=True)
     for cut in range(len(pt_intervals)):
-        plotter.draw_effectivness_curve(pt_code_cut=cut, outpath=os.path.join(
-            plots_path, f'effectivness_curve_cut_{pt_intervals[cut]}.pdf'), mask_type='full')
+        for mask_type in ['full', 'pt', 'quality_12', 'none']:
+            plotter.draw_efficiency_curve(pt_code_cut=cut, outpath=os.path.join(
+                eff_path, f'cut_{pt_intervals[cut]}_{mask_type}.pdf'), mask_type=mask_type)
 
 
 if __name__ == '__main__':

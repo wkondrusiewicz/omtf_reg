@@ -5,7 +5,7 @@ import json
 from torch.utils.data import DataLoader
 
 from omtf_reg.pytorch_approach.datasets import omtfDataset, omtfDatasetInverse, omtfDatasetMasked
-from omtf_reg.pytorch_approach.net import omtfNet, omtfNetBig, omtfNetBigger
+from omtf_reg.pytorch_approach.net import omtfNet, omtfNetBig, omtfNetBigger, omtfResNet, omtfResNetBig, omtfHalfResNet, omtfNetNotSoDense
 from omtf_reg.pytorch_approach.model import omtfModel
 
 
@@ -29,7 +29,7 @@ def parse_args():
         '--data_path', help='Path to data', required=True, type=str)
 
     parser.add_argument(
-        '--net', choices=['omtfNet', 'omtfNetBig', 'omtfNetBigger'], default='omtfNet')
+        '--net', choices=['omtfNet', 'omtfNetBig', 'omtfNetBigger', 'omtfResNet', 'omtfResNetBig', "omtfHalfResNet", 'omtfNetNotSoDense'], default='omtfNet')
     parser.add_argument(
         '--dataset_type', choices=['omtfDataset', 'omtfDatasetInverse', 'omtfDatasetMasked'], default='omtfDataset')
     parser.add_argument('--mask_path', default=None)
@@ -43,7 +43,7 @@ def parse_args():
 
 
 def get_net_architecture(name):
-    return {'omtfNet': omtfNet, 'omtfNetBig': omtfNetBig, 'omtfNetBigger': omtfNetBigger}[name]
+    return {'omtfNet': omtfNet, 'omtfNetBig': omtfNetBig, 'omtfNetBigger': omtfNetBigger, 'omtfResNet': omtfResNet, 'omtfResNetBig': omtfResNetBig, "omtfHalfResNet": omtfHalfResNet, "omtfNetNotSoDense": omtfNetNotSoDense}[name]
 
 
 def get_dataset_architecture(name):
@@ -64,6 +64,7 @@ def main():
     model = omtfModel(dataloaders=dataloaders,
                       experiment_dirpath=args.experiment_dirpath, net=net, init_lr=args.init_lr, weight_decay=args.weight_decay, lr_decay_rate=args.lr_decay_rate)
     if args.pretrained_model_path is not None:
+        args.pretrained_model_path = os.path.abspath(args.pretrained_model_path)
         model.load_model(args.pretrained_model_path)
 
     model.train(epochs=args.epochs)
@@ -75,7 +76,9 @@ def main():
                        'test_batch_size': args.test_batch_size,
                        'data_path': os.path.abspath(args.data_path), 'dataset_type': args.dataset_type,
                        'weight_decay': args.weight_decay,
-                       'lr_decay_rate': args.lr_decay_rate}
+                       'lr_decay_rate': args.lr_decay_rate,
+                       'net': args.net,
+                       'pretrained_model_path': args.pretrained_model_path or None}
 
     with open(os.path.join(args.experiment_dirpath, 'training_params.json'), 'w') as f:
         json.dump(training_params, f)

@@ -29,6 +29,9 @@ class omtfModel:
         if self._lr_decay_rate is not None:
             self.lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
                 optimizer=self.optimizer, gamma=self._lr_decay_rate)
+        os.makedirs(self.experiment_dirpath, exist_ok=True)
+        self.log = open(os.path.join(
+            self.experiment_dirpath, 'log.txt'), 'w')
 
     def train(self, epochs=20):
         assert 'TRAIN' in self.dataloaders.keys(), 'Missing train dataloader'
@@ -46,7 +49,9 @@ class omtfModel:
 
         for epoch in range(1, epochs + 1):
             t1 = time.time()
-            print(f'Epoch {epoch}')
+            log_epoch = f'\n\nEpoch {epoch}\n'
+            self.log.write(log_epoch)
+            print(log_epoch)
 
             for phase in ['TRAIN', 'VALID']:
                 if phase == 'TRAIN':
@@ -82,8 +87,9 @@ class omtfModel:
                                                  f'{phase}_{epoch}.npz'), data=gathered_labels)
 
                 phase_loss /= len(self.dataloaders[phase])
-                print(
-                    f'{phase} LOSS {phase_loss}, {self.get_statistics(gathered_labels, gathered_preds)}')
+                log_metrics = f'{phase} LOSS {phase_loss}, {self.get_statistics(gathered_labels, gathered_preds)}\n'
+                self.log.write(log_metrics)
+                print(log_metrics)
 
                 things_to_save['loss'][phase][epoch] = phase_loss
 
@@ -92,10 +98,14 @@ class omtfModel:
 
             if epoch % self.snapshot_frequency == 0:
                 self.save_model(epoch)
-                print('Snapshot successfully created!')
+                log_snapshot = 'Snapshot successfully created!\n'
+                self.log.write(log_snapshot)
+                print(log_snapshot)
 
             t2 = time.time()
-            print(f'Time elapsed: {t2-t1} seconds\n')
+            log_time = f'Time elapsed: {t2-t1} seconds\n'
+            self.log.write(log_time)
+            print(log_time)
 
         with open(os.path.join(self.experiment_dirpath, 'losses.json'), 'w') as f:
             json.dump(things_to_save, f)
@@ -126,8 +136,11 @@ class omtfModel:
         phase_loss /= len(self.dataloaders['TEST'])
         np.savez_compressed(os.path.join(self.experiment_dirpath, 'test',
                                          f'labels_and_preds.npz'), data={'predictions': gathered_preds, 'labels': gathered_labels})
-        print(
-            f'\nTEST LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}')
+
+        log_test = f'\nTEST LOSS {phase_loss}, r2 {self.get_statistics(gathered_labels, gathered_preds)}\n'
+        self.log.write(log_test)
+        self.log.close()
+        print(log_test)
 
     def save_model(self, epoch):
         os.makedirs(self.experiment_dirpath, exist_ok=True)
